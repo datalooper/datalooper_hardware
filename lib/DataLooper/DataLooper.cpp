@@ -8,7 +8,6 @@
  * @version 1.0
  */
 
-int DataLooper::memoryInstance;
 int DataLooper::instance;
 int DataLooper::looperNum;
 int DataLooper::looperCommand;
@@ -19,9 +18,6 @@ boolean DataLooper::onBeat;
 unsigned long DataLooper::beat_time;
 int DataLooper::led_pins[NUM_LOOPERS][LED_PINS] = {{3, 4, 6}, {9, 10, 16}, {17, 20, 22}};
 int DataLooper::control_pins[NUM_LOOPERS][NUM_CONTROLS] = {{0, 1, 2, 5}, {7, 8, 11, 12}, {13, 14, 15, 18}};
-long DataLooper::master_stop_time;
-long DataLooper::loop_stop_time;
-long DataLooper::config_press_time;
 
 //initializes new loopers
 Looper* DataLooper::loopers[NUM_LOOPERS] = {new Looper(), new Looper(),new Looper()};
@@ -41,10 +37,6 @@ void DataLooper::init(){
 	configOffDelay = -1;
 	onBeat = false;
 	beat_time = 0;
-
-  master_stop_time = -1;
-	loop_stop_time = -1;
-	config_press_time = -1;
   
   //initializes new loopers
   for (int i = 0; i < NUM_LOOPERS; i++){
@@ -54,7 +46,6 @@ void DataLooper::init(){
 void DataLooper::loadConfig(){
 	//Checks for stored config value
 	instance = EEPROM.read(CONFIG_ADDRESS);
-	memoryInstance = instance;
 	if(instance == 255){
 		EEPROM.write(CONFIG_ADDRESS, 0);
 	}
@@ -66,6 +57,8 @@ void DataLooper::checkIfOnBeat(long current_time){
     onBeat = false;
   }
 }
+
+//TODO Move code to LED class, blink method should just call blink, also, rather than storing beat_time, just start 50ms timer onBeat sysex
 void DataLooper::blinkLEDs(long current_time){
   if (current_time - beat_time >= BLINK_TIME) {
     for (int i = 0; i < NUM_LOOPERS; i++)
@@ -188,7 +181,6 @@ void DataLooper::configureLoopers(int i,int n){
   instance = ( i * NUM_CONTROLS) + n;
   Serial.print("configuring looper as: ");
   Serial.print(instance);
-  memoryInstance = instance;
   EEPROM.write(CONFIG_ADDRESS, instance);
   for( int x = 0; x < NUM_LOOPERS; x++){
     loopers[x]->configureLooper(x, instance, led_pins[x], control_pins[x]);
@@ -233,16 +225,6 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
   int reqInstance = looperNum / NUM_LOOPERS;
   int localLooper = looperNum % NUM_LOOPERS;
 
-//  if(looperCommand != DOWNBEAT){
-//    Serial.print(looperNum);
-//    Serial.print("\t");
-//    Serial.print(looperCommand);
-//    Serial.print("\t");
-//    Serial.print(looperData);
-//    Serial.println();
-//    Serial.print(localLooper);
-//    Serial.println();
-//  }
   switch (looperCommand)
     {
       case RESET:
@@ -278,7 +260,7 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
   
 }
 void DataLooper::onProgramChange(byte channel, byte program){
-  instance = memoryInstance + program;
+  instance = EEPROM.read(CONFIG_ADDRESS) + program;
   sendSysEx(0,0,INSTANCE_CHANGE,0);
 }
 void DataLooper::sendSysEx(int looper, int control, byte action, byte long_press_seconds){

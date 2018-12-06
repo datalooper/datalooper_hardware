@@ -83,9 +83,6 @@ class DataLooper {
         static int led_pins[NUM_LOOPERS][LED_PINS];
         static int control_pins[NUM_LOOPERS][NUM_CONTROLS];
 
-        static long master_stop_time;
-        static long loop_stop_time;
-        static long config_press_time;
         static long current_time;
         static Looper *loopers[NUM_LOOPERS];
 
