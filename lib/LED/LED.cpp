@@ -1,11 +1,16 @@
 #include "LED.h"
 
-Led::Led(int ledPins[])
-{
-  pins = ledPins;
-  for(int n = 0; n < LED_PINS; n++){
-    pinMode(pins[n], OUTPUT);
+Led::Led(){
+
+}
+
+void Led::init(int* ledPins){
+  
+  for(int n = 0; n < 3; n++){
+    pinMode(*(ledPins + n), OUTPUT);
+    this->ledPins[n] = *(ledPins + n);
   }
+  setColor(PURPLE);
 }
 void Led::writeColor(int color){
       if (color == GREEN) {
@@ -32,11 +37,23 @@ void Led::setColor(int color) {
   curColor = color;
   writeColor(color);
 }
+
 void Led::writeColor(int red, int green, int blue){
-  analogWrite(pins[0], red);
-  analogWrite(pins[1], green);
-  analogWrite(pins[2], blue);
+  // Serial.print("Pin 1: ");
+  // Serial.print(ledPins[0]);
+  // Serial.println();
+  // Serial.print("Pin 2: ");
+  // Serial.print(ledPins[1]);
+  // Serial.println();
+  // Serial.print("Pin 3: ");
+  // Serial.print(ledPins[2]);
+  // Serial.println();
+  analogWrite(ledPins[0], red);
+  analogWrite(ledPins[1], green);
+  analogWrite(ledPins[2], blue);
 }
 void Led::restoreColor() {
-  setColor(curColor);
+  writeColor(curColor);
 }
+
+

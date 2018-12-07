@@ -1,31 +1,31 @@
 #include "DataLooper.h"
+#include <Arduino.h>
+
+DataLooper dataLooper;
+
+void onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool complete)
+{
+  Serial.print("in Sysex");
+  Serial.println();
+  //dataLooper.onSysEx(sysExData, sysExSize, complete);
+}
+void onProgramChange(byte channel, byte program){
+  // dataLooper.onProgramChange(channel, program);
+}
 
 void setup()
 {
   Serial.begin(9600); 
-  DataLooper::loadConfig();
-  DataLooper::init();
+  
   // registers sysex handler
-  usbMIDI.setHandleSystemExclusive(DataLooper::onSysEx);
+  usbMIDI.setHandleSystemExclusive(onSysEx);
   // registers program change handler
-  usbMIDI.setHandleProgramChange(DataLooper::onProgramChange);
+  //usbMIDI.setHandleProgramChange(onProgramChange);
 }
 
 void loop()
 {
   usbMIDI.read();
   unsigned long current_time = millis();
-  DataLooper::checkIfOnBeat(current_time);
-  DataLooper::blinkLEDs(current_time);
-  DataLooper::checkConfig(current_time);
-  DataLooper::scanForButtonActivity(current_time);  
+  //dataLooper.scanForButtonActivity(current_time); 
 }
-
-
-
-
-
-
-
-
-
