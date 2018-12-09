@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include "Button.h"
 #include "EEPROM.h"
-
 /**
  * @file Button.cpp
  * @author Vince Cimo
@@ -12,15 +11,22 @@ Button::Button() {
 
 }
 
-void Button::init(int control_pin, int buttonNum){
-    bounce = Bounce ();
-    pinMode(control_pin, INPUT_PULLUP);
-    bounce.attach(control_pin);
+void Button::init(unsigned char *control_pin, unsigned char buttonNum){
+    unsigned char pin  = *(control_pin+buttonNum);
+    buttonNumber = buttonNum;
+    pinMode(pin, INPUT_PULLUP);
+    bounce.attach(pin);
     bounce.interval(DEBOUNCE_TIME);
+    long_press_time = LONG_PRESS_TIME;
+    //loadCommands();
 }
 
-void Button::update(boolean isFlipped, long current_time){
-    //TODO REMOVE THIS ON FINAL VERSION
+
+void Button::addCommand(DLCommand command){
+    commands.push_back (command);
+}
+void Button::update(bool isFlipped, unsigned long current_time){
+    bounce.update();
 
     //On Press
     if((bounce.risingEdge() && !isFlipped) || (bounce.fallingEdge() && isFlipped)){
@@ -45,9 +51,8 @@ void Button::update(boolean isFlipped, long current_time){
     }
 }
     
-
-    
-void Button::onPress(long current_time){
+void Button::onPress(unsigned long current_time){
+    Serial.print("press");
     press_time = current_time;
     is_pressed = true; 
     checkCommands(0, 4);
@@ -58,52 +63,42 @@ void Button::onRelease(){
     checkCommands(5, 9);
 }
 void Button::onMultiPress(){
-  press_time = -1;
-  //sendSysEx(looper, control, MULTI_TAP, 0);
-  checkCommands(10, 14);
+    press_time = -1;
+    checkCommands(10, 14);
 }
 void Button::onMultiRelease(){
-  //sendSysEx(looper, control, MULTI_RELEASE, 0);
-  is_pressed = false;
-  long_press_time = 500;
-  checkCommands(15, 19);
+    is_pressed = false;
+    long_press_time = 500;
+    checkCommands(15, 19);
 }
 void Button::onLongPress(){
     long_press_time += 500;
     checkCommands(20, 127);
 }
 
-void Button::checkCommands(int low, int high){
-    for(Command &command : commands){
-        if (command.dataType <= high && command.dataType >= low){
-            command.execute();
-        }
+void Button::checkCommands(unsigned char low, unsigned char high){
+    
+    for (auto const& command : commands) {
+        if (command.execute_on <= high && command.execute_on >= low && command.command_mode == mode){
+                command.execute();
+            }
     }
 }
-
-// void Button::diagnoseButton(int i, int n, int num){
-//   Serial.print("looper:");
-//   Serial.print( i );
-//   Serial.println();
-//   Serial.print("button: ");
-//   Serial.print(n);
-//   Serial.println();
-//   Serial.print("cc#: ");
-//   Serial.print(num);
-//   Serial.println();
-// }
 
 void Button::loadCommands(){
     // 3 bytes per command , 3 commands
     // button 1: bytes 0-2 command 1, 3-5 commmand 2, 6-8 command 3
     // button 2: bytes 9-11 command 1, etc..
     // buttonNum (zeroindex) * 9
-    int startByte = buttonNumber * NUMBER_COMMANDS * BYTES_PER_COMMAND;
-    int endByte = startByte + NUMBER_COMMANDS * BYTES_PER_COMMAND;
-    // for(int n = 0; n < NUMBER_COMMANDS; n++){
-    //     for(int x = 0; x < BYTES_PER_COMMAND; x++){
-    //         EEPROM.read(startByte+x)
-    //     }
-    //     startByte += BYTES_PER_COMMAND;
-    // }
+    unsigned char startByte = buttonNumber * NUMBER_COMMANDS * BYTES_PER_COMMAND;
+    for(unsigned char n = 0; n < NUMBER_COMMANDS; n++){
+        unsigned char execute_on = EEPROM.read(startByte);
+        unsigned char action = EEPROM.read(startByte+1);
+        unsigned char data1 = EEPROM.read(startByte+2);
+        unsigned char data2 = EEPROM.read(startByte+2);
+        if(execute_on != 255 && action != 255 && data1 != 255 && data2 != 255){
+            commands.push_back(DLCommand(execute_on, 0, action,data1, data2));
+        }
+        startByte += BYTES_PER_COMMAND;
+    }
 }

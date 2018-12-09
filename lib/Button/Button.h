@@ -8,29 +8,31 @@
  */
 
 #include <Arduino.h>
-#include "Command.h"
+#include "DLCommand.h"
 #define BOUNCE_WITH_PROMPT_DETECTION
 #include "Bounce2.h"
 #include "dlconst.h"
-
+#include <array>
+#include <vector>
 class Button {
 
 	public:
 		Button();
-        void init(int control_pin, int buttonNum);
-        void onPress(long current_time);
+        void init(unsigned char* control_pin, unsigned char buttonNum);
+        void onPress(unsigned long current_time);
         void onRelease();
         void onMultiPress();
         void onMultiRelease();
         void onLongPress();
-        void update(boolean isFlipped, long current_time);
+        void update(bool isFlipped, unsigned long current_time);
+        void addCommand(DLCommand command);
         void loadCommands();
-        void checkCommands(int low, int high);
-        Command commands[NUMBER_COMMANDS];
-        int buttonNumber;
-        long press_time;
+        void checkCommands(unsigned char low, unsigned char high);
+        std::vector<DLCommand> commands;
+        unsigned char buttonNumber;
+        unsigned int press_time;
         boolean is_pressed;
-        long long_press_time;
+        unsigned short int long_press_time;
 
         Bounce bounce;
         

@@ -6,13 +6,13 @@
 class Led
 {
   public:
-    int ledPins[LED_PINS];
-    int curColor;
+    unsigned char pins[LED_PINS];
+    unsigned char curColor;
     Led();
-    void init(int*ledPins);
-    void writeColor(int color);
-    void setColor(int color);
-    void writeColor(int red, int green, int blue);
+    void init(unsigned char*ledPins);
+    void writeColor(unsigned char color);
+    void setColor(unsigned char color);
+    void writeColor(unsigned char red, unsigned char green, unsigned char blue);
     void restoreColor();
 };
 

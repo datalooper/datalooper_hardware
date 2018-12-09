@@ -4,15 +4,15 @@ Led::Led(){
 
 }
 
-void Led::init(int* ledPins){
+void Led::init(unsigned char* ledPins){
   
   for(int n = 0; n < 3; n++){
     pinMode(*(ledPins + n), OUTPUT);
-    this->ledPins[n] = *(ledPins + n);
+    pins[n] = *(ledPins + n);
   }
-  setColor(PURPLE);
+  curColor = WHT;
 }
-void Led::writeColor(int color){
+void Led::writeColor(unsigned char color){
       if (color == GREEN) {
         writeColor(255,100,255);
       } else if (color == RED) {
@@ -33,24 +33,15 @@ void Led::writeColor(int color){
         writeColor(200,200,0);
       }
     }
-void Led::setColor(int color) {
+void Led::setColor(unsigned char color) {
   curColor = color;
   writeColor(color);
 }
 
-void Led::writeColor(int red, int green, int blue){
-  // Serial.print("Pin 1: ");
-  // Serial.print(ledPins[0]);
-  // Serial.println();
-  // Serial.print("Pin 2: ");
-  // Serial.print(ledPins[1]);
-  // Serial.println();
-  // Serial.print("Pin 3: ");
-  // Serial.print(ledPins[2]);
-  // Serial.println();
-  analogWrite(ledPins[0], red);
-  analogWrite(ledPins[1], green);
-  analogWrite(ledPins[2], blue);
+void Led::writeColor(unsigned char red, unsigned char green, unsigned char blue){
+  analogWrite(pins[0], red);
+  analogWrite(pins[1], green);
+  analogWrite(pins[2], blue);
 }
 void Led::restoreColor() {
   writeColor(curColor);

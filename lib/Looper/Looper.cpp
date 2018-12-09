@@ -1,15 +1,17 @@
 #include "Looper.h"
 
-Looper::Looper(){
-
+Looper::Looper() {
 }
-Looper::Looper(int *ledPins, int *controlPins, int looperNum) {
-    //Led led;
-    //led.init(ledPins);
-}
+void Looper::init(unsigned char *ledPins, unsigned char *controlPins, unsigned char looperNum){
+    this->looperNum = looperNum;
+    led.init(ledPins);
+    for(int x=0; x<NUM_CONTROLS; x++){
+        buttons[x].init(controlPins, x);
+    }
+}   
 void Looper::updateButtons(long current_time){
     //Row 3 of buttons is backwards on prototypes
-    if ( *looperNum == NUM_LOOPERS-1){
+    if ( looperNum == NUM_LOOPERS-1){
        for (int n = 0; n < NUM_CONTROLS; n++) {
             buttons[n].update(true, current_time);
        }

@@ -12,18 +12,18 @@ boolean DataLooper::blinking = false;
 IntervalTimer DataLooper::blinkTimer;
 
 DataLooper::DataLooper() {
-  bank = 0;
-  int led_pins[NUM_LOOPERS][LED_PINS] = {{3, 4, 6}, {9, 10, 16}, {17, 20, 22}};
-  int control_pins[NUM_LOOPERS][NUM_CONTROLS] = {{0, 1, 2, 5}, {7, 8, 11, 12}, {13, 14, 15, 18}};
-  //const Looper loopers[NUM_LOOPERS] = { Looper(&led_pins[0][0], &control_pins[0][0],0), Looper(&led_pins[1][0], &control_pins[1][0],1), Looper(&led_pins[2][0], &control_pins[2][0],2)};
-
-  int current_mode = LOOPER_MODE;
   blinking = false;
   //initializes new loopers
-  //loadConfig();
+  loadConfig();
   
 }
-
+void DataLooper::init(){
+     for (unsigned char i = 0; i < NUM_LOOPERS; i++)
+    {
+      loopers[i].init(&led_pins[i][0], &control_pins[i][0],i);
+    }
+    altModeCommands();
+}
 void DataLooper::loadConfig(){
 	// INSTANCE
 	instance = EEPROM.read(127);
@@ -38,8 +38,8 @@ void DataLooper::loadConfig(){
   }
 
   // DEFAULT MODE ON STARTUP
-  current_mode = EEPROM.read(125);
-  if(current_mode == 255){
+  mode = EEPROM.read(125);
+  if(mode == 255){
     //looper mode default
     EEPROM.write(125,0);
   }
@@ -48,23 +48,20 @@ void DataLooper::loadConfig(){
 }
 
 void DataLooper::scanForButtonActivity(long current_time){
-    for (int i = 0; i < NUM_LOOPERS; i++)
+    for (unsigned char i = 0; i < NUM_LOOPERS; i++)
     {
-      loopers[i].led.setColor(PURPLE);
-      //loopers[i].updateButtons(current_time);  
-      // if(blinking){
-      //     Serial.print("blink");
-      //     Serial.println();
-      //     //loopers[i].led.writeColor(GREEN);
-      // } else{
-      //   //loopers[i].led.restoreColor();
-      // }
+      loopers[i].updateButtons(current_time);  
+      if(blinking && i == bank){
+          loopers[i].led.writeColor(NONE);
+      } else{
+        loopers[i].led.restoreColor();
+      }
     }
 }
 
 void DataLooper::enterConfig(){
   Serial.print("Entering config");
-  for (int l = 0; l < NUM_LOOPERS; l++){
+  for (unsigned char l = 0; l < NUM_LOOPERS; l++){
     loopers[l].led.setColor(CYAN);
   }
 }
@@ -73,24 +70,24 @@ void DataLooper::configureLoopers(int i,int n){
   Serial.print("configuring looper as: ");
   Serial.print(instance);
   EEPROM.write(0, instance);
-  for( int x = 0; x < NUM_LOOPERS; x++){
+  for( unsigned char x = 0; x < NUM_LOOPERS; x++){
     // loopers[x].configureLooper(led_pins[x], control_pins[x], x);
     loopers[x].led.setColor(GREEN);
     //configOffDelay = millis();
   }
   sendSysEx(127,127,127,127);
 }
-void DataLooper::diagnoseButton(int i, int n, int num){
-  Serial.print("looper:");
-  Serial.print( i );
-  Serial.println();
-  Serial.print("button: ");
-  Serial.print(n);
-  Serial.println();
-  Serial.print("cc#: ");
-  Serial.print(num);
-  Serial.println();
-}
+// void DataLooper::diagnoseButton(int i, int n, int num){
+//   Serial.print("looper:");
+//   Serial.print( i );
+//   Serial.println();
+//   Serial.print("button: ");
+//   Serial.print(n);
+//   Serial.println();
+//   Serial.print("cc#: ");
+//   Serial.print(num);
+//   Serial.println();
+// }
 
 void DataLooper::toggleNewSession(boolean on){
   // if(on){
@@ -110,11 +107,11 @@ void DataLooper::toggleNewSession(boolean on){
 void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool complete)
 {
   //Translate SYSEX to variable data
-  int looperNum = sysExData[1];
-  int looperCommand = sysExData[2];
-  int looperData = sysExData[4];
-  int reqInstance = looperNum / NUM_LOOPERS;
-  int localLooper = looperNum % NUM_LOOPERS;
+  unsigned char looperNum = sysExData[1];
+  unsigned char looperCommand = sysExData[2];
+  unsigned char looperData = sysExData[4];
+  unsigned char reqInstance = looperNum / NUM_LOOPERS;
+  unsigned char localLooper = looperNum % NUM_LOOPERS;
 
   switch (looperCommand)
     {
@@ -126,25 +123,25 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
       case DOWNBEAT:
           blink();
           break;
-      // case CHANGE_STATE:
-      //     Serial.print("State change req");
-      //     Serial.print("\t");
-      //     Serial.print(looperData);
-      //     Serial.println();
-      //     if(reqInstance == instance){
-      //       loopers[localLooper].led.setColor(looperData);
-      //     }
-      //     break;
-      // case REQUEST_NOTES:
-      //     usbMIDI.sendNoteOn ( ((looperNum ) * NUM_CONTROLS ) + looperData, 127, MIDI_CHAN);
-      //     usbMIDI.sendNoteOff ( ((looperNum ) * NUM_CONTROLS ) + looperData, 127, MIDI_CHAN);
-      //     break;
-      // case NEW_SESSION:
-      //     toggleNewSession(looperData);
-      //     break;
-      // case CONFIG:
-      //     enterConfig();
-      //     break;
+      case CHANGE_STATE:
+          Serial.print("State change req");
+          Serial.print("\t");
+          Serial.print(looperData);
+          Serial.println();
+          if(reqInstance == instance){
+            loopers[localLooper].led.setColor(looperData);
+          }
+          break;
+      case REQUEST_NOTES:
+          usbMIDI.sendNoteOn ( ((looperNum ) * NUM_CONTROLS ) + looperData, 127, MIDI_CHAN);
+          usbMIDI.sendNoteOff ( ((looperNum ) * NUM_CONTROLS ) + looperData, 127, MIDI_CHAN);
+          break;
+      case NEW_SESSION:
+          toggleNewSession(looperData);
+          break;
+      case CONFIG:
+          enterConfig();
+          break;
       default: 
         break;
     }
@@ -165,3 +162,39 @@ void DataLooper::endBlink(){
   blinking = false;
 }
 //TODO on bank change, end timer!!
+
+void DataLooper::altModeCommands(){
+  //DLCommand(unsigned char execute_on, unsigned char command_mode, unsigned char action, unsigned char data1, unsigned char data2);
+  
+  //LOOPER MODE COMMAND DEFAULTS
+  // for (int x = 0; x<NUM_LOOPERS; x++){
+  //   //BUTTON 1
+  //   loopers[x].buttons[0].addCommand(DLCommand(PRESS_SYSEX, LOOPER_MODE, RECORD, DL_TRACK_TYPE, QUANTIZED ));
+  //   loopers[x].buttons[0].addCommand(DLCommand(RELEASE_SYSEX, LOOPER_MODE, RECORD, CL_TRACK_TYPE, QUANTIZED ));
+  //   loopers[x].buttons[0].addCommand(DLCommand(LONG_PRESS_SYSEX, LOOPER_MODE, NEW_CLIP, 0, 0 ));
+
+  //   //BUTTON 2
+  //   loopers[x].buttons[1].addCommand(DLCommand(PRESS_SYSEX, LOOPER_MODE, STOP, BOTH_TRACK_TYPES, QUANTIZED ));
+  //   loopers[x].buttons[1].addCommand(DLCommand(LONG_PRESS_SYSEX, LOOPER_MODE, CLEAR, BOTH_TRACK_TYPES, QUANTIZED ));
+
+  //   //BUTTON 3
+  //   loopers[x].buttons[2].addCommand(DLCommand(RELEASE_SYSEX, LOOPER_MODE, UNDO, BOTH_TRACK_TYPES, 0 ));
+  //   loopers[x].buttons[2].addCommand(DLCommand(RELEASE_SYSEX, LOOPER_MODE, CHANGE_BANK, ONLY_BANK_WHEN_CLEAR, 0 ));
+  //   loopers[x].buttons[2].addCommand(DLCommand(LONG_PRESS_SYSEX, LOOPER_MODE, CHANGE_BANK, ALWAYS_BANK, 0 ));
+
+  // }
+  DLCommand cmd = DLCommand(PRESS_SYSEX, LOOPER_MODE, TOGGLE_STOP_START, BOTH_TRACK_TYPES, QUANTIZED );
+  loopers[0].buttons[3].addCommand(cmd);
+  // loopers[1].buttons[3].addCommand(DLCommand(PRESS_SYSEX, LOOPER_MODE, MUTE_ALL, BOTH_TRACK_TYPES, TOGGLE ));
+  // loopers[2].buttons[3].addCommand(DLCommand(PRESS_SYSEX, LOOPER_MODE, CLEAR_ALL, BOTH_TRACK_TYPES, 0 ));
+  // loopers[2].buttons[3].addCommand(DLCommand(LONG_PRESS_SYSEX, LOOPER_MODE, CHANGE_MODE, NEW_SESSION_MODE, 0 ));
+
+
+  //NEW SESSION MODE COMMANDS
+  // loopers[1].buttons[3].addCommand(DLCommand(PRESS_SYSEX, NEW_SESSION_MODE, TAP_TEMPO, NUM_TAPS_BEFORE_METRO, 0 ));
+  // loopers[2].buttons[3].addCommand(DLCommand(PRESS_SYSEX, NEW_SESSION_MODE, CHANGE_MODE, LOOPER_MODE, 0 ));
+  // loopers[0].buttons[0].addCommand(DLCommand(PRESS_SYSEX, NEW_SESSION_MODE, RECORD, BOTH_TRACK_TYPES, UNQUANTIZED ));
+  // loopers[1].buttons[0].addCommand(DLCommand(PRESS_SYSEX, NEW_SESSION_MODE, RECORD, BOTH_TRACK_TYPES, UNQUANTIZED ));
+  // loopers[2].buttons[0].addCommand(DLCommand(PRESS_SYSEX, NEW_SESSION_MODE, RECORD, BOTH_TRACK_TYPES, UNQUANTIZED ));
+
+}

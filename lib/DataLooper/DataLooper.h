@@ -27,16 +27,13 @@ class DataLooper {
         void scanForButtonActivity(long current_time);
         void blink();
         static void endBlink();
+        void altModeCommands();
 
 	private:
         //PIN CONFIG
-        int led_pins[NUM_LOOPERS][LED_PINS];
-        
-        int control_pins[NUM_LOOPERS][NUM_CONTROLS];
-        int instance;
-        int bank;
-        int current_mode;
-        int channel;
+        unsigned char led_pins[NUM_LOOPERS][LED_PINS] = {{3, 4, 6}, {9, 10, 16}, {17, 20, 22}};
+        unsigned char control_pins[NUM_LOOPERS][NUM_CONTROLS] = {{0, 1, 2, 5}, {7, 8, 11, 12}, {13, 14, 15, 18}};
+        unsigned char channel;
         long current_time;
         Looper loopers[NUM_LOOPERS];
         static IntervalTimer blinkTimer;
