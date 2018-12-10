@@ -1,15 +1,16 @@
 #include "DLCommand.h"
 
-DLCommand::DLCommand(unsigned char execute_on, unsigned char command_mode, unsigned char action, unsigned char data1, unsigned char data2) : execute_on(execute_on), command_mode(command_mode), action(action), data1(data1), data2(data2)
+DLCommand::DLCommand(){}
+DLCommand::DLCommand(unsigned char _execute_on, unsigned char _command_mode, unsigned char _action, unsigned char _data1, unsigned char _data2) : execute_on(_execute_on), command_mode(_command_mode), action(_action), data1(_data1), data2(_data2)
 {
 
 }
 
 void DLCommand::execute() const{
     checkForSpecialCommands();
-    Serial.print("executing command");
     Serial.println();
-    Serial.print(execute_on);
+    Serial.print("executing command in DLCommand");
+    Serial.println();
     unsigned char iterative_value = (instance * (NUM_BANKS * NUM_LOOPERS * NUM_CONTROLS))+(bank * NUM_LOOPERS * NUM_CONTROLS) + data1;
     switch(execute_on % NUMBER_DATATYPES){
         case NOTE_ON:

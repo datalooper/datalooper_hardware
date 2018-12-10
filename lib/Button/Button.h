@@ -28,7 +28,7 @@ class Button {
         void addCommand(DLCommand *command);
         void loadCommands();
         void checkCommands(unsigned char low, unsigned char high);
-        std::vector<DLCommand> commands;
+        std::vector<DLCommand*> commands;
         unsigned char buttonNumber;
         unsigned int press_time;
         boolean is_pressed;

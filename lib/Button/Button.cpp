@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "Button.h"
 #include "EEPROM.h"
+#include <typeinfo>
 /**
  * @file Button.cpp
  * @author Vince Cimo
@@ -24,9 +25,8 @@ void Button::init(unsigned char *control_pin, unsigned char buttonNum){
 }
 
 
-void Button::addCommand(DLCommand *command){
-    //Warren....Does this make a copy?!?!
-    commands.push_back (*command);
+void Button::addCommand(DLCommand* command){
+    commands.push_back (command);
 }
 void Button::update(bool isFlipped, unsigned long current_time){
     bounce.update();
@@ -80,13 +80,20 @@ void Button::onLongPress(){
 }
 
 void Button::checkCommands(unsigned char low, unsigned char high){
-    
-    for (auto command : commands) {
-        Serial.print("executing command");
-        Serial.print(command.execute_on);
+
+    std::vector<DLCommand*>::iterator it;
+    for ( it = commands.begin() ; it != commands.end(); it++){
         Serial.println();
-        if (command.execute_on <= high && command.execute_on >= low && command.command_mode == mode){
-                command.execute();
+        Serial.print((*it)->execute_on);
+        Serial.print(" , ");
+        Serial.print((*it)->action);
+        Serial.print(" , ");
+        Serial.print((*it)->data1);
+        Serial.print(" , ");
+        Serial.print((*it)->data2);
+        Serial.println();
+        if ((*it)->execute_on <= high && (*it)->execute_on >= low && (*it)->command_mode == mode){
+                (*it)->execute();
             }
     }
 }
@@ -96,15 +103,15 @@ void Button::loadCommands(){
     // button 1: bytes 0-2 command 1, 3-5 commmand 2, 6-8 command 3
     // button 2: bytes 9-11 command 1, etc..
     // buttonNum (zeroindex) * 9
-    unsigned char startByte = buttonNumber * NUMBER_COMMANDS * BYTES_PER_COMMAND;
-    for(unsigned char n = 0; n < NUMBER_COMMANDS; n++){
-        unsigned char execute_on = EEPROM.read(startByte);
-        unsigned char action = EEPROM.read(startByte+1);
-        unsigned char data1 = EEPROM.read(startByte+2);
-        unsigned char data2 = EEPROM.read(startByte+2);
-        if(execute_on != 255 && action != 255 && data1 != 255 && data2 != 255){
-            commands.push_back(DLCommand(execute_on, 0, action,data1, data2));
-        }
-        startByte += BYTES_PER_COMMAND;
-    }
+    // unsigned char startByte = buttonNumber * NUMBER_COMMANDS * BYTES_PER_COMMAND;
+    // for(unsigned char n = 0; n < NUMBER_COMMANDS; n++){
+    //     unsigned char execute_on = EEPROM.read(startByte);
+    //     unsigned char action = EEPROM.read(startByte+1);
+    //     unsigned char data1 = EEPROM.read(startByte+2);
+    //     unsigned char data2 = EEPROM.read(startByte+2);
+    //     if(execute_on != 255 && action != 255 && data1 != 255 && data2 != 255){
+    //         commands.push_back(DLCommand(execute_on, 0, action,data1, data2));
+    //     }
+    //     startByte += BYTES_PER_COMMAND;
+    // }
 }

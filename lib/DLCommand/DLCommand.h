@@ -11,6 +11,7 @@
 class DLCommand {
 
 	public:
+        DLCommand();
 		DLCommand(unsigned char _execute_on, unsigned char _command_mode, unsigned char _action, unsigned char _data1, unsigned char _data2);
         unsigned char execute_on;
         unsigned char command_mode;

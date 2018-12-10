@@ -28,6 +28,7 @@ class DataLooper {
         void blink();
         static void endBlink();
         void altModeCommands();
+        DLCommand cmd;
 
 	private:
         //PIN CONFIG
