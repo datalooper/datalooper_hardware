@@ -32,7 +32,6 @@ class Button {
         unsigned int press_time;
         boolean is_pressed;
         unsigned short int long_press_time;
-
         Bounce bounce;
         
 };

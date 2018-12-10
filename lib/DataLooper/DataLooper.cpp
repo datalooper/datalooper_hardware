@@ -11,12 +11,11 @@
 boolean DataLooper::blinking = false;
 IntervalTimer DataLooper::blinkTimer;
 
-DataLooper::DataLooper() {
+DataLooper::DataLooper() : instance(0), bank(0), mode(0) {
   blinking = false;
-  initialized = false;
   //initializes new loopers
   loadConfig();
-  
+  altModeCommands();
 }
 void DataLooper::init(){
      for (unsigned char i = 0; i < NUM_LOOPERS; i++)
@@ -48,10 +47,7 @@ void DataLooper::loadConfig(){
 }
 
 void DataLooper::scanForButtonActivity(long current_time){
-    if(!initialized){
-      altModeCommands();
-      initialized = true;
-    }
+
     for (unsigned char i = 0; i < NUM_LOOPERS; i++)
     {
       loopers[i].updateButtons(current_time);  
@@ -173,33 +169,33 @@ void DataLooper::altModeCommands(){
   //LOOPER MODE COMMAND DEFAULTS
   for (int x = 0; x<NUM_LOOPERS; x++){
     //BUTTON 1
-    loopers[x].buttons[0].commands[0] = DLCommand(PRESS_SYSEX, LOOPER_MODE, RECORD, DL_TRACK_TYPE, QUANTIZED, x);
-    loopers[x].buttons[0].commands[1] = DLCommand(RELEASE_SYSEX, LOOPER_MODE, RECORD, CL_TRACK_TYPE, QUANTIZED, x );
-    loopers[x].buttons[0].commands[2] = DLCommand(LONG_PRESS_SYSEX, LOOPER_MODE, NEW_CLIP, 0, 0 , x);
+    loopers[x].buttons[0].commands[0] = DLCommand(PRESS_SYSEX, LOOPER_MODE, RECORD, DL_TRACK_TYPE, QUANTIZED, x, &mode , &bank, &instance);
+    loopers[x].buttons[0].commands[1] = DLCommand(RELEASE_SYSEX, LOOPER_MODE, RECORD, CL_TRACK_TYPE, QUANTIZED, x, &mode , &bank, &instance );
+    loopers[x].buttons[0].commands[2] = DLCommand(LONG_PRESS_SYSEX, LOOPER_MODE, NEW_CLIP, 0, 0 , x, &mode , &bank, &instance);
 
     //BUTTON 2
-    loopers[x].buttons[1].commands[0] = DLCommand(PRESS_SYSEX, LOOPER_MODE, STOP, BOTH_TRACK_TYPES, QUANTIZED, x );
-    loopers[x].buttons[1].commands[1] = DLCommand(LONG_PRESS_SYSEX, LOOPER_MODE, CLEAR, BOTH_TRACK_TYPES, QUANTIZED, x);
+    loopers[x].buttons[1].commands[0] = DLCommand(PRESS_SYSEX, LOOPER_MODE, STOP, BOTH_TRACK_TYPES, QUANTIZED, x, &mode , &bank, &instance );
+    loopers[x].buttons[1].commands[1] = DLCommand(LONG_PRESS_SYSEX, LOOPER_MODE, CLEAR, BOTH_TRACK_TYPES, QUANTIZED, x, &mode , &bank, &instance);
 
     //BUTTON 3
-    loopers[x].buttons[2].commands[0] = DLCommand(RELEASE_SYSEX, LOOPER_MODE, UNDO, BOTH_TRACK_TYPES, 0, x );
-    loopers[x].buttons[2].commands[1] = DLCommand(RELEASE_SYSEX, LOOPER_MODE, CHANGE_BANK, ONLY_BANK_WHEN_CLEAR, 0, x );
-    loopers[x].buttons[2].commands[2] = DLCommand(LONG_PRESS_SYSEX, LOOPER_MODE, CHANGE_BANK, ALWAYS_BANK, 0, x);
+    loopers[x].buttons[2].commands[0] = DLCommand(RELEASE_SYSEX, LOOPER_MODE, UNDO, BOTH_TRACK_TYPES, 0, x , &mode , &bank, &instance);
+    loopers[x].buttons[2].commands[1] = DLCommand(RELEASE_SYSEX, LOOPER_MODE, CHANGE_BANK, ONLY_BANK_WHEN_CLEAR, x, x, &mode , &bank, &instance );
+    loopers[x].buttons[2].commands[2] = DLCommand(LONG_PRESS_SYSEX, LOOPER_MODE, CHANGE_BANK, ALWAYS_BANK, 0, x, &mode , &bank, &instance);
   }
 
-  loopers[1].buttons[3].commands[0] = DLCommand(PRESS_SYSEX, LOOPER_MODE, MUTE_ALL, BOTH_TRACK_TYPES, TOGGLE, 1);
-  loopers[1].buttons[3].commands[1] = DLCommand(PRESS_SYSEX, NEW_SESSION_MODE, TAP_TEMPO, NUM_TAPS_BEFORE_METRO, 0, 1 );
+  loopers[1].buttons[3].commands[0] = DLCommand(PRESS_SYSEX, LOOPER_MODE, MUTE_ALL, BOTH_TRACK_TYPES, TOGGLE, 1, &mode , &bank, &instance);
+  loopers[1].buttons[3].commands[1] = DLCommand(PRESS_SYSEX, NEW_SESSION_MODE, TAP_TEMPO, NUM_TAPS_BEFORE_METRO, 0, 1 , &mode , &bank, &instance);
 
-  loopers[2].buttons[3].commands[0] = DLCommand(PRESS_SYSEX, LOOPER_MODE, CLEAR_ALL, BOTH_TRACK_TYPES, 0 , 2);
-  loopers[2].buttons[3].commands[1] = DLCommand(LONG_PRESS_SYSEX, LOOPER_MODE, CHANGE_MODE, NEW_SESSION_MODE, 0, 2);
-  loopers[2].buttons[3].commands[2] = DLCommand(PRESS_SYSEX, NEW_SESSION_MODE, CHANGE_MODE, LOOPER_MODE, 0 , 2);
+  loopers[2].buttons[3].commands[0] = DLCommand(PRESS_SYSEX, LOOPER_MODE, CLEAR_ALL, BOTH_TRACK_TYPES, 0 , 2, &mode , &bank, &instance);
+  loopers[2].buttons[3].commands[1] = DLCommand(LONG_PRESS_SYSEX, LOOPER_MODE, CHANGE_MODE, NEW_SESSION_MODE, 0, 2, &mode , &bank, &instance);
+  loopers[2].buttons[3].commands[2] = DLCommand(PRESS_SYSEX, NEW_SESSION_MODE, CHANGE_MODE, LOOPER_MODE, 0 , 2, &mode , &bank, &instance);
 
-  loopers[0].buttons[3].commands[0] = DLCommand(PRESS_SYSEX, LOOPER_MODE, TOGGLE_STOP_START, UNQUANTIZED, 0 , 0);
+  loopers[0].buttons[3].commands[0] = DLCommand(PRESS_SYSEX, LOOPER_MODE, TOGGLE_STOP_START, UNQUANTIZED, 0 , 0, &mode , &bank, &instance);
 
 
   //NEW SESSION MODE COMMANDS
-  loopers[0].buttons[0].commands[3] = DLCommand(PRESS_SYSEX, NEW_SESSION_MODE, RECORD, BOTH_TRACK_TYPES, UNQUANTIZED , 0);
-  loopers[1].buttons[0].commands[3] = DLCommand(PRESS_SYSEX, NEW_SESSION_MODE, RECORD, BOTH_TRACK_TYPES, UNQUANTIZED , 1);
-  loopers[2].buttons[0].commands[3] = DLCommand(PRESS_SYSEX, NEW_SESSION_MODE, RECORD, BOTH_TRACK_TYPES, UNQUANTIZED , 2);
+  loopers[0].buttons[0].commands[3] = DLCommand(PRESS_SYSEX, NEW_SESSION_MODE, RECORD, BOTH_TRACK_TYPES, UNQUANTIZED , 0, &mode , &bank, &instance);
+  loopers[1].buttons[0].commands[3] = DLCommand(PRESS_SYSEX, NEW_SESSION_MODE, RECORD, BOTH_TRACK_TYPES, UNQUANTIZED , 1, &mode , &bank, &instance);
+  loopers[2].buttons[0].commands[3] = DLCommand(PRESS_SYSEX, NEW_SESSION_MODE, RECORD, BOTH_TRACK_TYPES, UNQUANTIZED , 2, &mode , &bank, &instance);
 
 }

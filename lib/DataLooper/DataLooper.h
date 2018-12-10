@@ -28,8 +28,9 @@ class DataLooper {
         void blink();
         static void endBlink();
         void altModeCommands();
-        bool initialized;
-
+        unsigned char instance;
+        unsigned char bank;
+        unsigned char mode;
 	private:
         //PIN CONFIG
         unsigned char led_pins[NUM_LOOPERS][LED_PINS] = {{3, 4, 6}, {9, 10, 16}, {17, 20, 22}};

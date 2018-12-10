@@ -5,8 +5,6 @@ DataLooper dataLooper;
 
 void onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool complete)
 {
-  Serial.print("in Sysex");
-  Serial.println();
   dataLooper.onSysEx(sysExData, sysExSize, complete);
 }
 void onProgramChange(byte channel, byte program){

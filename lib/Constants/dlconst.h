@@ -2,11 +2,6 @@
 #define CONSTANTS
 
 
-// //GLOBAL VARS
-static unsigned char instance = 0;
-static unsigned char bank = 0;
-static unsigned char mode = 0;
-
 //GLOBAL CONST
 const unsigned char NUM_LOOPERS = 3;
 const unsigned char NUM_BANKS = 3;
