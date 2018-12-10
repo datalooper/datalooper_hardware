@@ -7,6 +7,8 @@
  * @version 1.0
  */
 
+//wbdavis29@yahoo.com
+
 Button::Button() {
 
 }
@@ -22,8 +24,9 @@ void Button::init(unsigned char *control_pin, unsigned char buttonNum){
 }
 
 
-void Button::addCommand(DLCommand command){
-    commands.push_back (command);
+void Button::addCommand(DLCommand *command){
+    //Warren....Does this make a copy?!?!
+    commands.push_back (*command);
 }
 void Button::update(bool isFlipped, unsigned long current_time){
     bounce.update();
@@ -78,7 +81,10 @@ void Button::onLongPress(){
 
 void Button::checkCommands(unsigned char low, unsigned char high){
     
-    for (auto const& command : commands) {
+    for (auto command : commands) {
+        Serial.print("executing command");
+        Serial.print(command.execute_on);
+        Serial.println();
         if (command.execute_on <= high && command.execute_on >= low && command.command_mode == mode){
                 command.execute();
             }

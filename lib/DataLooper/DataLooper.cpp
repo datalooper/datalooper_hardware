@@ -184,7 +184,7 @@ void DataLooper::altModeCommands(){
 
   // }
   DLCommand cmd = DLCommand(PRESS_SYSEX, LOOPER_MODE, TOGGLE_STOP_START, BOTH_TRACK_TYPES, QUANTIZED );
-  loopers[0].buttons[3].addCommand(cmd);
+  loopers[0].buttons[3].addCommand(&cmd);
   // loopers[1].buttons[3].addCommand(DLCommand(PRESS_SYSEX, LOOPER_MODE, MUTE_ALL, BOTH_TRACK_TYPES, TOGGLE ));
   // loopers[2].buttons[3].addCommand(DLCommand(PRESS_SYSEX, LOOPER_MODE, CLEAR_ALL, BOTH_TRACK_TYPES, 0 ));
   // loopers[2].buttons[3].addCommand(DLCommand(LONG_PRESS_SYSEX, LOOPER_MODE, CHANGE_MODE, NEW_SESSION_MODE, 0 ));

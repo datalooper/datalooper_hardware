@@ -2,6 +2,7 @@
 
 DLCommand::DLCommand(unsigned char execute_on, unsigned char command_mode, unsigned char action, unsigned char data1, unsigned char data2) : execute_on(execute_on), command_mode(command_mode), action(action), data1(data1), data2(data2)
 {
+
 }
 
 void DLCommand::execute() const{

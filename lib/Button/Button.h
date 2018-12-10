@@ -25,7 +25,7 @@ class Button {
         void onMultiRelease();
         void onLongPress();
         void update(bool isFlipped, unsigned long current_time);
-        void addCommand(DLCommand command);
+        void addCommand(DLCommand *command);
         void loadCommands();
         void checkCommands(unsigned char low, unsigned char high);
         std::vector<DLCommand> commands;
