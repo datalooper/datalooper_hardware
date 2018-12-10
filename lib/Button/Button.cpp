@@ -11,23 +11,19 @@
 //wbdavis29@yahoo.com
 
 Button::Button() {
-
 }
 
-void Button::init(unsigned char *control_pin, unsigned char buttonNum){
+void Button::init(unsigned char *control_pin, unsigned char buttonNum, unsigned char looperNum){
     unsigned char pin  = *(control_pin+buttonNum);
     buttonNumber = buttonNum;
     pinMode(pin, INPUT_PULLUP);
     bounce.attach(pin);
     bounce.interval(DEBOUNCE_TIME);
     long_press_time = LONG_PRESS_TIME;
+    
     //loadCommands();
 }
 
-
-void Button::addCommand(DLCommand* command){
-    commands.push_back (command);
-}
 void Button::update(bool isFlipped, unsigned long current_time){
     bounce.update();
 
@@ -55,7 +51,6 @@ void Button::update(bool isFlipped, unsigned long current_time){
 }
     
 void Button::onPress(unsigned long current_time){
-    Serial.print("press");
     press_time = current_time;
     is_pressed = true; 
     checkCommands(0, 4);
@@ -81,20 +76,10 @@ void Button::onLongPress(){
 
 void Button::checkCommands(unsigned char low, unsigned char high){
 
-    std::vector<DLCommand*>::iterator it;
-    for ( it = commands.begin() ; it != commands.end(); it++){
-        Serial.println();
-        Serial.print((*it)->execute_on);
-        Serial.print(" , ");
-        Serial.print((*it)->action);
-        Serial.print(" , ");
-        Serial.print((*it)->data1);
-        Serial.print(" , ");
-        Serial.print((*it)->data2);
-        Serial.println();
-        if ((*it)->execute_on <= high && (*it)->execute_on >= low && (*it)->command_mode == mode){
-                (*it)->execute();
-            }
+    for (int x=0; x < NUMBER_COMMANDS; x++){
+        if(commands[x].execute_on >= low && commands[x].execute_on <= high){
+            commands[x].execute();
+        }
     }
 }
 

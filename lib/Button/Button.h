@@ -18,17 +18,16 @@ class Button {
 
 	public:
 		Button();
-        void init(unsigned char* control_pin, unsigned char buttonNum);
+        void init(unsigned char* control_pin, unsigned char buttonNum, unsigned char looperNum);
         void onPress(unsigned long current_time);
         void onRelease();
         void onMultiPress();
         void onMultiRelease();
         void onLongPress();
         void update(bool isFlipped, unsigned long current_time);
-        void addCommand(DLCommand *command);
         void loadCommands();
         void checkCommands(unsigned char low, unsigned char high);
-        std::vector<DLCommand*> commands;
+        DLCommand commands[4];
         unsigned char buttonNumber;
         unsigned int press_time;
         boolean is_pressed;

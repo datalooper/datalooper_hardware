@@ -1,15 +1,23 @@
 #include "DLCommand.h"
 
-DLCommand::DLCommand(){}
-DLCommand::DLCommand(unsigned char _execute_on, unsigned char _command_mode, unsigned char _action, unsigned char _data1, unsigned char _data2) : execute_on(_execute_on), command_mode(_command_mode), action(_action), data1(_data1), data2(_data2)
+DLCommand::DLCommand() : execute_on(255), command_mode(255), action(255), data1(255), data2(255) {} 
+DLCommand::DLCommand(unsigned char _execute_on, unsigned char _command_mode, unsigned char _action, unsigned char _data1, unsigned char _data2, unsigned char _looperNum) : execute_on(_execute_on), command_mode(_command_mode), action(_action), data1(_data1), data2(_data2), looperNum(_looperNum)
 {
-
+ 
 }
+
 
 void DLCommand::execute() const{
     checkForSpecialCommands();
     Serial.println();
-    Serial.print("executing command in DLCommand");
+    Serial.print("execute on: ");
+    Serial.print(execute_on);
+    Serial.print(" , action: ");
+    Serial.print(action);
+    Serial.print(" , data1: ");
+    Serial.print(data1);
+    Serial.print(" , data2: ");
+    Serial.print(data2);
     Serial.println();
     unsigned char iterative_value = (instance * (NUM_BANKS * NUM_LOOPERS * NUM_CONTROLS))+(bank * NUM_LOOPERS * NUM_CONTROLS) + data1;
     switch(execute_on % NUMBER_DATATYPES){
@@ -26,9 +34,10 @@ void DLCommand::execute() const{
             usbMIDI.sendProgramChange ( iterative_value, MIDI_CHAN);
             break;
         case SYSEX:
-            Serial.print("attempting sysex");
             uint8_t data[BYTES_PER_COMMAND] = {action, data1, data2};
-            usbMIDI.sendSysEx (BYTES_PER_SYSEX_MSG, data, false);
+            byte sending = 0x12;
+            byte array[] = {0x41, (byte) instance, (byte) bank, (byte) looperNum, (byte) mode, (byte) action, (byte) data1, sending, (byte) data2, 0xF7};
+            usbMIDI.sendSysEx(9, array, false);
             break;
     }
     

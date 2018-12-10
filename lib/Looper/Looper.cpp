@@ -6,7 +6,7 @@ void Looper::init(unsigned char *ledPins, unsigned char *controlPins, unsigned c
     this->looperNum = looperNum;
     led.init(ledPins);
     for(int x=0; x<NUM_CONTROLS; x++){
-        buttons[x].init(controlPins, x);
+        buttons[x].init(controlPins, x, looperNum);
     }
 }   
 void Looper::updateButtons(long current_time){
