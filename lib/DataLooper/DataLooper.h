@@ -26,11 +26,18 @@ class DataLooper {
         void sendSysEx(int looper, int control, byte action, byte long_press_seconds);
         void scanForButtonActivity(long current_time);
         void blink();
+        DLCommand getCommand(unsigned char execute_on, unsigned char mode, unsigned char action, unsigned char data1, unsigned char data2, unsigned char looperNum);
         static void endBlink();
+        void checkForBankChange();
+        void checkForModeChange();
+        void setColor(unsigned char color);
         void altModeCommands();
         unsigned char instance;
+        unsigned char lastInstance;
         unsigned char bank;
+        unsigned char lastBank;
         unsigned char mode;
+        unsigned char lastMode;
 	private:
         //PIN CONFIG
         unsigned char led_pins[NUM_LOOPERS][LED_PINS] = {{3, 4, 6}, {9, 10, 16}, {17, 20, 22}};

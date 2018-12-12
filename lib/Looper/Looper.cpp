@@ -4,9 +4,10 @@ Looper::Looper() {
 }
 void Looper::init(unsigned char *ledPins, unsigned char *controlPins, unsigned char looperNum){
     this->looperNum = looperNum;
+    state = STATE_CLEAR;
     led.init(ledPins);
     for(int x=0; x<NUM_CONTROLS; x++){
-        buttons[x].init(controlPins, x, looperNum);
+        buttons[x].init(controlPins, x, looperNum, &state);
     }
 }   
 void Looper::updateButtons(long current_time){
@@ -21,7 +22,14 @@ void Looper::updateButtons(long current_time){
         } 
     }
 }
-    
+
+void Looper::updateState(unsigned char _state){
+    led.setColor(_state);
+    state = _state;
+    Serial.print("updating state to: ");
+    Serial.print(state);
+    Serial.println();
+}    
 
 
       

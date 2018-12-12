@@ -19,6 +19,8 @@ const unsigned char PURPLE = 6;
 const unsigned char CYAN = 7;
 const unsigned char GRY = 8;
 
+//STATE
+const unsigned char STATE_CLEAR = 4;
 //MODES
 const unsigned char LOOPER_MODE = 0;
 const unsigned char NEW_SESSION_MODE = 1;
@@ -52,7 +54,7 @@ static const unsigned char NEW_SESSION = 4;
 static const unsigned char CONFIG = 5;
 
 
-static const unsigned char NUMBER_COMMANDS = 3;
+static const unsigned char NUMBER_COMMANDS = 4;
 static const unsigned char BYTES_PER_COMMAND = 4;
 static const unsigned char BYTES_PER_SYSEX_MSG = 3;
 
@@ -87,13 +89,23 @@ const unsigned char DOUBLE_TAP_NOTE_OFF = 11;
 const unsigned char DOUBLE_TAP_CC = 12;
 const unsigned char DOUBLE_TAP_PROGRAM_CHANGE = 13;
 const unsigned char DOUBLE_TAP_SYSEX = 14;
-const unsigned char PRESS_RELEASE_NOTE_ON_OFF = 15;
-const unsigned char PRESS_RELEASE_CC_VAL_0 = 16;
-const unsigned char LONG_PRESS_NOTE_ON = 17;
-const unsigned char LONG_PRESS_NOTE_OFF = 18;
-const unsigned char LONG_PRESS_CC = 19;
-const unsigned char LONG_PRESS_PROGRAM_CHANGE = 20;
-const unsigned char LONG_PRESS_SYSEX = 21;
+const unsigned char DOUBLE_RELEASE_NOTE_ON = 15;
+const unsigned char DOUBLE_RELEASE_NOTE_OFF = 16;
+const unsigned char DOUBLE_RELEASE_CC = 17;
+const unsigned char DOUBLE_RELEASE_PROGRAM_CHANGE = 18;
+const unsigned char DOUBLE_RELEASE_SYSEX = 19;
+const unsigned char LONG_PRESS_NOTE_ON = 20;
+const unsigned char LONG_PRESS_NOTE_OFF = 21;
+const unsigned char LONG_PRESS_CC = 22;
+const unsigned char LONG_PRESS_PROGRAM_CHANGE = 23;
+const unsigned char LONG_PRESS_SYSEX = 24;
+const unsigned char LONG_RELEASE_NOTE_ON = 20;
+const unsigned char LONG_RELEASE_NOTE_OFF = 21;
+const unsigned char LONG_RELEASE_CC = 22;
+const unsigned char LONG_RELEASE_PROGRAM_CHANGE = 23;
+const unsigned char LONG_RELEASE_SYSEX = 24;
+const unsigned char PRESS_RELEASE_NOTE_ON_OFF = 20;
+const unsigned char PRESS_RELEASE_CC_VAL_0 = 21;
 
 //ACTIONS
 

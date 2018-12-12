@@ -13,13 +13,15 @@
 Button::Button() {
 }
 
-void Button::init(unsigned char *control_pin, unsigned char buttonNum, unsigned char looperNum){
+void Button::init(unsigned char *control_pin, unsigned char buttonNum, unsigned char looperNum, unsigned char *_state){
     unsigned char pin  = *(control_pin+buttonNum);
+    state = _state;
     buttonNumber = buttonNum;
     pinMode(pin, INPUT_PULLUP);
     bounce.attach(pin);
     bounce.interval(DEBOUNCE_TIME);
     long_press_time = LONG_PRESS_TIME;
+    long_pressed = false;
     
     //loadCommands();
 }
@@ -39,6 +41,8 @@ void Button::update(bool isFlipped, unsigned long current_time){
     else if((bounce.fallingEdge() && !isFlipped) || (bounce.risingEdge() && isFlipped)){
         if (press_time == -1){
             onMultiRelease();
+        } else if(long_pressed){
+            onLongRelease();
         } else{
             onRelease();
         }
@@ -56,6 +60,7 @@ void Button::onPress(unsigned long current_time){
     checkCommands(0, 4);
 }
 void Button::onRelease(){
+    Serial.print("release");
     is_pressed = false;
     long_press_time = 500;
     checkCommands(5, 9);
@@ -71,9 +76,15 @@ void Button::onMultiRelease(){
 }
 void Button::onLongPress(){
     long_press_time += 500;
-    checkCommands(20, 127);
+    long_pressed = true;
+    checkCommands(20, 24);
 }
-
+void Button::onLongRelease(){
+    is_pressed = false;
+    long_pressed = false;
+    long_press_time = 500;
+    checkCommands(25, 29);
+}
 void Button::checkCommands(unsigned char low, unsigned char high){
 
     for (int x=0; x < NUMBER_COMMANDS; x++){
