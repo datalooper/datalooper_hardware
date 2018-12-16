@@ -50,8 +50,10 @@ static const unsigned char RESET = 0;
 static const unsigned char CHANGE_STATE = 1;
 static const unsigned char DOWNBEAT = 2;
 static const unsigned char REQUEST_NOTES = 3;
-static const unsigned char NEW_SESSION = 4;
-static const unsigned char CONFIG = 5;
+static const unsigned char MODE_CHANGE = 4;
+static const unsigned char BANK_CHANGE = 5;
+static const unsigned char ABLETON_CONNECTED = 6;
+static const unsigned char CONFIG = 7;
 
 
 static const unsigned char NUMBER_COMMANDS = 4;
@@ -123,7 +125,7 @@ const unsigned char TOGGLE_STOP_START = 20;
 const unsigned char TAP_TEMPO = 25;
 const unsigned char CHANGE_MODE = 27;
 
-const unsigned char NUM_TAPS_BEFORE_METRO = 4;
+const unsigned char NUM_TAPS_BEFORE_METRO = 3;
 
 const unsigned char ONLY_BANK_WHEN_CLEAR = 1;
 const unsigned char ALWAYS_BANK = 0;

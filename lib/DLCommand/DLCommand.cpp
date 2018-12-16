@@ -9,8 +9,6 @@ DLCommand::DLCommand(unsigned char _execute_on, unsigned char _command_mode, uns
 
 void DLCommand::execute() const{
     Serial.println();
-    Serial.print("MODE: ");
-    Serial.print(*mode);
     if(command_mode == *mode){
         checkForSpecialCommands();
         Serial.println();
@@ -56,7 +54,7 @@ void DLCommand::checkForSpecialCommands() const{
             break;
         case CHANGE_BANK:
             if ((data1 == 1 && *state == STATE_CLEAR) || data1 == 0){
-                *bank = looperNum;
+              //  *bank = looperNum;
             }
             
             break;

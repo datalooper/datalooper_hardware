@@ -20,7 +20,8 @@ class DataLooper {
         void enterConfig();
         void configureLoopers(int i,int n);
         void diagnoseButton(int i, int n, int num);
-        void toggleNewSession(boolean on);
+        void changeMode(unsigned char newMode);
+        void changeBank(unsigned char newBank);
         void onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool complete);
         void onProgramChange(byte channel, byte program);
         void sendSysEx(int looper, int control, byte action, byte long_press_seconds);
@@ -38,6 +39,7 @@ class DataLooper {
         unsigned char lastBank;
         unsigned char mode;
         unsigned char lastMode;
+        unsigned char abletonConnected;
 	private:
         //PIN CONFIG
         unsigned char led_pins[NUM_LOOPERS][LED_PINS] = {{3, 4, 6}, {9, 10, 16}, {17, 20, 22}};

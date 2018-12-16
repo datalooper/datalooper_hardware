@@ -55,21 +55,28 @@ void Button::update(bool isFlipped, unsigned long current_time){
 }
     
 void Button::onPress(unsigned long current_time){
+    Serial.print("press");
+    Serial.println();
     press_time = current_time;
     is_pressed = true; 
     checkCommands(0, 4);
 }
 void Button::onRelease(){
     Serial.print("release");
+    Serial.println();
     is_pressed = false;
     long_press_time = 500;
     checkCommands(5, 9);
 }
 void Button::onMultiPress(){
+    Serial.print("multi-press");
+    Serial.println();
     press_time = -1;
     checkCommands(10, 14);
 }
 void Button::onMultiRelease(){
+    Serial.print("multi-release");
+    Serial.println();
     is_pressed = false;
     long_press_time = 500;
     checkCommands(15, 19);

@@ -127,21 +127,14 @@ void DataLooper::configureLoopers(int i,int n){
 //   Serial.println();
 // }
 
-void DataLooper::toggleNewSession(boolean on){
-  // if(on){
-  //   for (int l = 0; l < NUM_LOOPERS; l++){
-  //     loopers[l].led.setColor(PURPLE);
-  //   }
-  //   newSessionActive = true;
-  // } else{
-  //   for (int l = 0; l < NUM_LOOPERS; l++){
-  //     if(loopers[l].led.curColor == PURPLE){
-  //       loopers[l].led.setColor(WHT);
-  //     }
-  //   }
-  //   newSessionActive = false;
-  // }
+void DataLooper::changeMode(unsigned char newMode){
+  mode = newMode;
 }
+
+void DataLooper::changeBank(unsigned char newBank){
+  bank = newBank;
+}
+
 void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool complete)
 {
   //Translate SYSEX to variable data
@@ -176,8 +169,18 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
           usbMIDI.sendNoteOn ( ((looperNum ) * NUM_CONTROLS ) + looperData, 127, MIDI_CHAN);
           usbMIDI.sendNoteOff ( ((looperNum ) * NUM_CONTROLS ) + looperData, 127, MIDI_CHAN);
           break;
-      case NEW_SESSION:
-          toggleNewSession(looperData);
+      case MODE_CHANGE:
+          Serial.print("Mode change req");
+          Serial.print(looperData);
+          changeMode(looperData);
+          break;
+      case BANK_CHANGE:
+          Serial.print("bank change req");
+          Serial.print(looperData);
+          changeBank(looperData);
+          break;
+      case ABLETON_CONNECTED:
+          abletonConnected = looperData;
           break;
       case CONFIG:
           enterConfig();
@@ -226,6 +229,7 @@ void DataLooper::altModeCommands(){
 
   loopers[1].buttons[3].commands[0] = getCommand(PRESS_SYSEX, LOOPER_MODE, MUTE_ALL, BOTH_TRACK_TYPES, TOGGLE, 1);
   loopers[1].buttons[3].commands[1] = getCommand(PRESS_SYSEX, NEW_SESSION_MODE, TAP_TEMPO, NUM_TAPS_BEFORE_METRO, 0, 1 );
+  loopers[1].buttons[3].commands[2] = getCommand(DOUBLE_TAP_SYSEX, NEW_SESSION_MODE, TAP_TEMPO, NUM_TAPS_BEFORE_METRO, 0, 1 );
 
   loopers[2].buttons[3].commands[0] = getCommand(PRESS_SYSEX, LOOPER_MODE, CLEAR_ALL, BOTH_TRACK_TYPES, 2 , 2);
   loopers[2].buttons[3].commands[1] = getCommand(LONG_PRESS_SYSEX, LOOPER_MODE, CHANGE_MODE, NEW_SESSION_MODE, 0, 2);
