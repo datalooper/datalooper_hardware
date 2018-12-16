@@ -33,13 +33,7 @@ class DataLooper {
         void checkForModeChange();
         void setColor(unsigned char color);
         void altModeCommands();
-        unsigned char instance;
-        unsigned char lastInstance;
-        unsigned char bank;
-        unsigned char lastBank;
-        unsigned char mode;
-        unsigned char lastMode;
-        unsigned char abletonConnected;
+
 	private:
         //PIN CONFIG
         unsigned char led_pins[NUM_LOOPERS][LED_PINS] = {{3, 4, 6}, {9, 10, 16}, {17, 20, 22}};

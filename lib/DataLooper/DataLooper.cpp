@@ -2,6 +2,7 @@
 #include "DataLooper.h"
 #include <EEPROM.h>
 #include "IntervalTimer.h"
+#include "State.h"
 /**
  * @file DataLooper.cpp
  * @author Vince Cimo
@@ -11,7 +12,7 @@
 boolean DataLooper::blinking = false;
 IntervalTimer DataLooper::blinkTimer;
 
-DataLooper::DataLooper() : instance(0), bank(0), mode(0), lastBank(bank), lastMode(mode), lastInstance(instance) {
+DataLooper::DataLooper(){
   blinking = false;
   //initializes new loopers
   loadConfig();
@@ -25,8 +26,8 @@ void DataLooper::init(){
 }
 void DataLooper::loadConfig(){
 	// INSTANCE
-	instance = EEPROM.read(127);
-	if(instance == 255){
+	State::instance = EEPROM.read(127);
+	if(State::instance == 255){
 		EEPROM.write(127, 0);
 	}
   // CHANNEL
@@ -37,8 +38,8 @@ void DataLooper::loadConfig(){
   }
 
   // DEFAULT MODE ON STARTUP
-  mode = EEPROM.read(125);
-  if(mode == 255){
+  State::mode = EEPROM.read(125);
+  if(State::mode == 255){
     //looper mode default
     EEPROM.write(125,0);
   }
@@ -53,7 +54,7 @@ void DataLooper::scanForButtonActivity(long current_time){
     for (unsigned char i = 0; i < NUM_LOOPERS; i++)
     {
       loopers[i].updateButtons(current_time);  
-      if(blinking && i == bank){
+      if(blinking && i == State::bank){
           loopers[i].led.writeColor(NONE);
       } else{
         loopers[i].led.restoreColor();
@@ -62,19 +63,19 @@ void DataLooper::scanForButtonActivity(long current_time){
 }
 
 void DataLooper::checkForBankChange(){
-  if (bank != lastBank){
+  if (State::bank != State::lastBank){
     for (unsigned char i = 0; i < NUM_LOOPERS; i++)
     {
       loopers[i].updateState(STATE_CLEAR);
     }
-    lastBank = bank;
+    State::lastBank = State::bank;
   }
 }
 
 void DataLooper::checkForModeChange(){
-  if (mode != lastMode){
+  if (State::mode != State::lastMode){
 
-    switch (mode){
+    switch (State::mode){
       case NEW_SESSION_MODE:
         setColor(PURPLE);
         break;
@@ -87,7 +88,7 @@ void DataLooper::checkForModeChange(){
       default:
         break;
     }
-    lastMode = mode;
+    State::lastMode = State::mode;
   }
 }
 void DataLooper::setColor(unsigned char color){
@@ -104,10 +105,10 @@ void DataLooper::enterConfig(){
   
 }
 void DataLooper::configureLoopers(int i,int n){
-  instance = ( i * NUM_CONTROLS) + n;
+  State::instance = ( i * NUM_CONTROLS) + n;
   Serial.print("configuring looper as: ");
-  Serial.print(instance);
-  EEPROM.write(0, instance);
+  Serial.print(State::instance);
+  EEPROM.write(0, State::instance);
   for( unsigned char x = 0; x < NUM_LOOPERS; x++){
     // loopers[x].configureLooper(led_pins[x], control_pins[x], x);
     loopers[x].led.setColor(GREEN);
@@ -128,11 +129,11 @@ void DataLooper::configureLoopers(int i,int n){
 // }
 
 void DataLooper::changeMode(unsigned char newMode){
-  mode = newMode;
+  State::mode = newMode;
 }
 
 void DataLooper::changeBank(unsigned char newBank){
-  bank = newBank;
+  State::bank = newBank;
 }
 
 void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool complete)
@@ -155,7 +156,7 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
           blink();
           break;
       case CHANGE_STATE:
-        if(reqBank == bank && reqInstance == instance){
+        if(reqBank == State::bank && reqInstance == State::instance){
             Serial.print("State change req");
             Serial.print(looperData);
             Serial.println();
@@ -180,7 +181,7 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
           changeBank(looperData);
           break;
       case ABLETON_CONNECTED:
-          abletonConnected = looperData;
+          State::abletonConnected = looperData;
           break;
       case CONFIG:
           enterConfig();
@@ -191,7 +192,7 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
   
 }
 void DataLooper::onProgramChange(byte channel, byte program){
-  instance = EEPROM.read(0) + program;
+  State::instance = EEPROM.read(0) + program;
   //sendSysEx(0,0,INSTANCE_CHANGE,0);
 }
 
@@ -245,6 +246,6 @@ void DataLooper::altModeCommands(){
 
 }
 DLCommand DataLooper::getCommand(unsigned char execute_on, unsigned char req_mode, unsigned char action, unsigned char data1, unsigned char data2, unsigned char looperNum){
-  return DLCommand(execute_on, req_mode, action, data1, data2, looperNum, &mode , &bank, &instance, &(loopers[looperNum].state));
+  return DLCommand(execute_on, req_mode, action, data1, data2, looperNum, &(loopers[looperNum].state));
 
 }

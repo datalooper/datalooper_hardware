@@ -11,11 +11,8 @@
 class DLCommand {
 
 	public:
-        DLCommand(unsigned char _execute_on, unsigned char _command_mode, unsigned char _action, unsigned char _data1, unsigned char _data2, unsigned char looperNum, unsigned char * _mode, unsigned char * _bank, unsigned char * _instance, unsigned char *_state);
+        DLCommand(unsigned char _execute_on, unsigned char _command_mode, unsigned char _action, unsigned char _data1, unsigned char _data2, unsigned char looperNum, unsigned char *_state);
         DLCommand();
-        unsigned char * mode;
-        unsigned char * bank;
-        unsigned char * instance;
         unsigned char * state;
         unsigned char execute_on;
         unsigned char command_mode;
