@@ -55,6 +55,7 @@ void DLCommand::checkForSpecialCommands() const{
             break;
         case CHANGE_BANK:
             if (State::abletonConnected == 0 && ((data1 == 1 && *state == STATE_CLEAR) || data1 == 0)){
+                Serial.print("changing bank");
               State::bank = looperNum;
             }
             

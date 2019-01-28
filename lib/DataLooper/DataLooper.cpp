@@ -236,7 +236,7 @@ void DataLooper::altModeCommands(){
   loopers[2].buttons[3].commands[1] = getCommand(LONG_PRESS_SYSEX, LOOPER_MODE, CHANGE_MODE, NEW_SESSION_MODE, 0, 2);
   loopers[2].buttons[3].commands[2] = getCommand(PRESS_SYSEX, NEW_SESSION_MODE, CHANGE_MODE, LOOPER_MODE, 0 , 2);
 
-  loopers[0].buttons[3].commands[0] = getCommand(PRESS_SYSEX, LOOPER_MODE, TOGGLE_STOP_START, BOTH_TRACK_TYPES, UNQUANTIZED , 0);
+  loopers[0].buttons[3].commands[0] = getCommand(PRESS_SYSEX, LOOPER_MODE, TOGGLE_STOP_START, BOTH_TRACK_TYPES, QUANTIZED , 0);
 
 
   //NEW SESSION MODE COMMANDS
