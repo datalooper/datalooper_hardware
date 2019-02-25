@@ -1,251 +1,252 @@
-#include <Arduino.h>
 #include "DataLooper.h"
-#include <EEPROM.h>
-#include "IntervalTimer.h"
-#include "State.h"
+
 /**
  * @file DataLooper.cpp
  * @author Vince Cimo
  * @version 1.0
  */
 
-boolean DataLooper::blinking = false;
-IntervalTimer DataLooper::blinkTimer;
+//boolean DataLooper::blinking = false;
+//IntervalTimer DataLooper::blinkTimer;
 
-DataLooper::DataLooper(){
-  blinking = false;
-  //initializes new loopers
+DataLooper::DataLooper(WS2812Serial * _leds) {
+   leds = _leds;
+   //blinking = false;
+  
+   //initializes buttons
+   for(int x = 0; x < NUM_BUTTONS; x++){
+     buttons[x].init(BUTTON_PINS[x], x, LED_NUMBERS[x], leds, this);
+   }
+  loadAltModeCommands();
   loadConfig();
-  altModeCommands();
-}
-void DataLooper::init(){
-     for (unsigned char i = 0; i < NUM_LOOPERS; i++)
-    {
-      loopers[i].init(&led_pins[i][0], &control_pins[i][0],i);
-    }
-}
-void DataLooper::loadConfig(){
-	// INSTANCE
-	State::instance = EEPROM.read(127);
-	if(State::instance == 255){
-		EEPROM.write(127, 0);
-	}
-  // CHANNEL
-  channel = EEPROM.read(126);
-  if(channel == 255){
-    //channel 14 default
-    EEPROM.write(126,14);
-  }
-
-  // DEFAULT MODE ON STARTUP
-  State::mode = EEPROM.read(125);
-  if(State::mode == 255){
-    //looper mode default
-    EEPROM.write(125,0);
-  }
-
-  //EEPROM BUTTON COMMANDS LOADED IN INDIVIDUAL CLASS
 }
 
-void DataLooper::scanForButtonActivity(long current_time){
-    checkForBankChange();
-    checkForModeChange();
-    
-    for (unsigned char i = 0; i < NUM_LOOPERS; i++)
-    {
-      loopers[i].updateButtons(current_time);  
-      if(blinking && i == State::bank){
-          loopers[i].led.writeColor(NONE);
-      } else{
-        loopers[i].led.restoreColor();
-      }
-    }
-}
-
-void DataLooper::checkForBankChange(){
-  if (State::bank != State::lastBank){
-    for (unsigned char i = 0; i < NUM_LOOPERS; i++)
-    {
-      loopers[i].updateState(STATE_CLEAR);
-    }
-    State::lastBank = State::bank;
+void DataLooper::clearControlChanges(unsigned char _ccNum, unsigned char _ccValue){
+  for(int x = 0; x < NUM_BUTTONS; x++){
+    buttons[x].clearControlChanges(_ccNum, _ccValue);
   }
 }
+
+ void DataLooper::loadConfig(){
+
+   // CHANNEL
+  //  if(EEPROM.read(126) == 255){
+  //    //channel 14 default
+  //    EEPROM.write(126,14);
+  //    channel = 14;
+  //  } else{
+	//    channel = EEPROM.read(126);
+  //  }
+
+   // DEFAULT MODE ON STARTUP
+    State::mode = 0;
+  //  if(EEPROM.read(125) == 255){
+  //    //looper mode default
+  //    EEPROM.write(125,0);
+     
+  //  } else{
+	//    State::mode = EEPROM.read(125);
+  //  }
+
+
+
+   //EEPROM BUTTON COMMANDS LOADED IN INDIVIDUAL CLASS
+ }
+
+void DataLooper::loadAltModeCommands(){
+  
+  
+}
+void DataLooper::scanForButtonActivity(unsigned long current_time){
+  checkForModeChange();
+    if(State::blinking && blinkTimer > BLINK_TIME){
+      for (unsigned char i = 0; i < NUM_BUTTONS; i++)
+        {
+          buttons[i].unBlink();
+        }
+      State::blinking = false;
+   }
+    if(State::inConfig == 2 && State::configExitMillis >= 1000){
+      leds->clear();
+      leds->show();
+      State::inConfig = 0;
+      State::configExitMillis = 0;
+    }
+    for (unsigned char i = 0; i < NUM_BUTTONS; i++)
+    {
+      buttons[i].update(current_time);
+    }
+}
+
+// void DataLooper::checkForBankChange(){
+//   // if (State::bank != State::lastBank){
+//   //   for (unsigned char i = 0; i < NUM_BUTTONS; i++)
+//   //   {
+//   //     buttons[i].setColor(WHT);
+//   //   }
+//   //   State::lastBank = State::bank;
+//   // }
+// }
 
 void DataLooper::checkForModeChange(){
   if (State::mode != State::lastMode){
-
-    switch (State::mode){
-      case NEW_SESSION_MODE:
-        setColor(PURPLE);
-        break;
-      case LOOPER_MODE:
-        setColor(WHT);
-        break;
-      case CONFIG_MODE:
-        setColor(CYAN);
-        break;
-      default:
-        break;
-    }
+    Serial.println("checking modeeee");
+    changeMode();
     State::lastMode = State::mode;
+    byte array[] = {0x1E, 8, State::mode, 0, 0, 0};
+    usbMIDI.sendSysEx(6, array, false);
   }
 }
-void DataLooper::setColor(unsigned char color){
-  for (unsigned char i = 0; i < NUM_LOOPERS; i++)
-    {
-      loopers[i].led.setColor(color);
-    }
-}
-void DataLooper::enterConfig(){
-  Serial.print("Entering config");
-  for (unsigned char l = 0; l < NUM_LOOPERS; l++){
-    loopers[l].led.setColor(CYAN);
+void DataLooper::changeMode(){
+  for(int x = 0; x< NUM_BUTTONS; x++){
+    buttons[x].changeMode();
   }
-  
 }
-void DataLooper::configureLoopers(int i,int n){
-  State::instance = ( i * NUM_CONTROLS) + n;
-  Serial.print("configuring looper as: ");
-  Serial.print(State::instance);
-  EEPROM.write(0, State::instance);
-  for( unsigned char x = 0; x < NUM_LOOPERS; x++){
-    // loopers[x].configureLooper(led_pins[x], control_pins[x], x);
-    loopers[x].led.setColor(GREEN);
-    //configOffDelay = millis();
-  }
-  sendSysEx(127,127,127,127);
-}
-// void DataLooper::diagnoseButton(int i, int n, int num){
-//   Serial.print("looper:");
-//   Serial.print( i );
-//   Serial.println();
-//   Serial.print("button: ");
-//   Serial.print(n);
-//   Serial.println();
-//   Serial.print("cc#: ");
-//   Serial.print(num);
-//   Serial.println();
+
+// void DataLooper::changeBank(unsigned char newBank){
+//   State::bank = newBank;
 // }
-
-void DataLooper::changeMode(unsigned char newMode){
-  State::mode = newMode;
-}
-
-void DataLooper::changeBank(unsigned char newBank){
-  State::bank = newBank;
-}
 
 void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool complete)
 {
   //Translate SYSEX to variable data
-  unsigned char looperNum = sysExData[1];
-  unsigned char looperCommand = sysExData[2];
-  unsigned char looperData = sysExData[4];
-  unsigned char localLooper = looperNum % NUM_LOOPERS;
-  unsigned char reqInstance = (looperNum - localLooper ) / (NUM_LOOPERS * NUM_BANKS);
-  unsigned char reqBank = (( looperNum - localLooper ) / NUM_LOOPERS ) % NUM_BANKS;
-  switch (looperCommand)
-    {
-      // case RESET:
-      //     toggleNewSession(false);
-      //     for( int x = 0; x < NUM_LOOPERS; x++){
-      //       loopers[x].led.setColor(WHT);
-      //     }
-      case DOWNBEAT:
-          blink();
-          break;
-      case CHANGE_STATE:
-        if(reqBank == State::bank && reqInstance == State::instance){
-            Serial.print("State change req");
-            Serial.print(looperData);
-            Serial.println();
-            Serial.print("looper #: ");
-            Serial.print(localLooper);
-            Serial.println();
-            loopers[localLooper].updateState(looperData);
-          }
-          break;
-      case REQUEST_NOTES:
-          usbMIDI.sendNoteOn ( ((looperNum ) * NUM_CONTROLS ) + looperData, 127, MIDI_CHAN);
-          usbMIDI.sendNoteOff ( ((looperNum ) * NUM_CONTROLS ) + looperData, 127, MIDI_CHAN);
-          break;
-      case MODE_CHANGE:
-          Serial.print("Mode change req");
-          Serial.print(looperData);
-          changeMode(looperData);
-          break;
-      case BANK_CHANGE:
-          Serial.print("bank change req");
-          Serial.print(looperData);
-          changeBank(looperData);
-          break;
-      case ABLETON_CONNECTED:
-          State::abletonConnected = looperData;
-          break;
-      case CONFIG:
-          enterConfig();
-          break;
-      default: 
+  if(sysExData[1] == 0x1e){
+    switch(sysExData[2]){
+      case 0:
+        //DAW Connection
+        if(sysExData[3] == 0x01){
+          State::dawConnected = true;
+          Serial.print("daw connected");
+        } else{
+          State::dawConnected = false;
+          Serial.print("daw disconnected");
+        }
+        break;      
+      case 1:
+        //state change
+        //Serial.print("looper #:");
+        //Serial.println(sysExData[3]);
+        //Serial.print("state:");
+        //Serial.print(sysExData[4]);
+        for(int x=0; x<NUM_BUTTONS; x++){
+          buttons[x].onLooperStateChange(sysExData[3], sysExData[4]);
+        }
         break;
+      case 2:
+        Serial.println("looper command requested");
+        usbMIDI.sendNoteOn(sysExData[4],127,14);
+        usbMIDI.sendNoteOff(sysExData[4],127,14);
+        break;
+      case 3:
+        for(int x=0; x<NUM_BUTTONS; x++){
+          buttons[x].onBeat(sysExData[3]);
+        }
+         State::blinking = true;
+         blinkTimer = 0;
+        break;
+      case 7:
+        Serial.println("in config");
+        State::inConfig = 1;
+        break;
+      case 8:
+        Serial.println("config byte");
+        configureDL(sysExData);
+        break;
+      case 9:
+        Serial.println("end config");
+        for(int x=0; x<NUM_BUTTONS; x++){
+          buttons[x].loadCommands();
+          leds->setPixel(LED_NUMBERS[x], RED.rgb);
+          leds->show();
+          State::inConfig = 2;
+          State::configExitMillis = 0;
+        }
+        break;
+      default:
+        break;
+
     }
-  
+  }
 }
+
+void DataLooper::offBeat(){
+  for(int x = 0; x < NUM_BUTTONS; x++){
+    buttons[x].restoreColor();
+  }
+}
+
+void DataLooper::configureDL(const uint8_t *sysExData){
+      ee_storage_typ command;
+      Serial.print("Command #: ");
+      Serial.println(sysExData[sysExStartByte-1]);
+          for(int byte = 0; byte < SYSEX_BYTES_PER_COMMAND; byte++){
+            switch(byte){
+              case 0:
+                Serial.print("Button Action: ");
+                command.commands.button_action = sysExData[sysExStartByte+byte];
+                break;
+              case 1:
+                Serial.print("Action: ");
+                command.commands.action = sysExData[sysExStartByte+byte];
+                break;
+              case 2:
+                Serial.print("Data 1: ");
+                command.commands.data1 = sysExData[sysExStartByte+byte];
+                break;
+              case 3:
+                Serial.print("Data 2: ");
+                command.commands.data2 = sysExData[sysExStartByte+byte];
+                break;
+              case 4:
+                Serial.print("Data 3: ");
+                command.commands.data3 = sysExData[sysExStartByte+byte];
+                break;
+              case 5:
+                Serial.print("Data 4: ");
+                command.commands.data4 = sysExData[sysExStartByte+byte];
+                break;
+              case 6:
+                Serial.print("Data 5: ");
+                command.commands.data5 = sysExData[sysExStartByte+byte];
+                break;  
+              case 7:
+                Serial.print("LED Control: ");
+                command.commands.led_control = sysExData[sysExStartByte+byte];
+                break;
+              case 8:
+                Serial.print("Mode: ");
+                command.commands.mode = sysExData[sysExStartByte+byte];
+                break;
+            }
+            Serial.println (sysExData[sysExStartByte+byte]);
+            
+          } 
+  writeCommand(sysExData[sysExStartByte-1], command);
+}
+
+void DataLooper::writeCommand(uint8_t actionNum, ee_storage_typ command){
+  int curByte = 0;
+  int startByte = actionNum * BYTES_PER_COMMAND;
+  for(int byte = 0; byte < BYTES_PER_COMMAND; byte++){
+      EEPROM.write(startByte+curByte, command.asBytes[byte]);
+      curByte++;
+    }
+}
+
 void DataLooper::onProgramChange(byte channel, byte program){
-  State::instance = EEPROM.read(0) + program;
+  //State::instance = EEPROM.read(0) + program;
   //sendSysEx(0,0,INSTANCE_CHANGE,0);
 }
 
-//Teensy only has 1 timer, so handling in base class to avoid duplicates
-void DataLooper::blink(){
-  blinking = true;
-  blinkTimer.begin(endBlink, 50000);
-}
-void DataLooper::endBlink(){
-  blinkTimer.end();
-  blinking = false;
-}
-//TODO on bank change, end timer!!
-
-void DataLooper::altModeCommands(){
-  //unsigned char execute_on, unsigned char command_mode, unsigned char action, unsigned char data1, unsigned char data2);
-  
-  //LOOPER MODE COMMAND DEFAULTS
-  for (int x = 0; x<NUM_LOOPERS; x++){
-    //BUTTON 1
-    loopers[x].buttons[0].commands[0] = getCommand(PRESS_SYSEX, LOOPER_MODE, RECORD, DL_TRACK_TYPE, QUANTIZED, x);
-    loopers[x].buttons[0].commands[1] = getCommand(RELEASE_SYSEX, LOOPER_MODE, RECORD, CL_TRACK_TYPE, QUANTIZED, x);
-    loopers[x].buttons[0].commands[2] = getCommand(LONG_PRESS_SYSEX, LOOPER_MODE, NEW_CLIP, 0, 0 , x);
-    loopers[x].buttons[0].commands[3] = getCommand(PRESS_SYSEX, NEW_SESSION_MODE, RECORD, DL_TRACK_TYPE, UNQUANTIZED, x);
-    //BUTTON 2
-    loopers[x].buttons[1].commands[0] = getCommand(PRESS_SYSEX, LOOPER_MODE, STOP, BOTH_TRACK_TYPES, QUANTIZED, x );
-    loopers[x].buttons[1].commands[1] = getCommand(LONG_PRESS_SYSEX, LOOPER_MODE, CLEAR, BOTH_TRACK_TYPES, 0, x);
-    loopers[x].buttons[1].commands[2] = getCommand(PRESS_SYSEX, NEW_SESSION_MODE, STOP, DL_TRACK_TYPE, UNQUANTIZED, x);
-
-    //BUTTON 3
-    loopers[x].buttons[2].commands[0] = getCommand(RELEASE_SYSEX, LOOPER_MODE, UNDO, BOTH_TRACK_TYPES, 0, x );
-    loopers[x].buttons[2].commands[1] = getCommand(RELEASE_SYSEX, LOOPER_MODE, CHANGE_BANK, ONLY_BANK_WHEN_CLEAR, 0, x );
-    loopers[x].buttons[2].commands[2] = getCommand(LONG_PRESS_SYSEX, LOOPER_MODE, CHANGE_BANK, ALWAYS_BANK, 0, x);
-  }
-
-  loopers[1].buttons[3].commands[0] = getCommand(PRESS_SYSEX, LOOPER_MODE, MUTE_ALL, BOTH_TRACK_TYPES, TOGGLE, 1);
-  loopers[1].buttons[3].commands[1] = getCommand(PRESS_SYSEX, NEW_SESSION_MODE, TAP_TEMPO, NUM_TAPS_BEFORE_METRO, 0, 1 );
-  loopers[1].buttons[3].commands[2] = getCommand(DOUBLE_TAP_SYSEX, NEW_SESSION_MODE, TAP_TEMPO, NUM_TAPS_BEFORE_METRO, 0, 1 );
-
-  loopers[2].buttons[3].commands[0] = getCommand(PRESS_SYSEX, LOOPER_MODE, CLEAR_ALL, BOTH_TRACK_TYPES, 2 , 2);
-  loopers[2].buttons[3].commands[1] = getCommand(LONG_PRESS_SYSEX, LOOPER_MODE, CHANGE_MODE, NEW_SESSION_MODE, 0, 2);
-  loopers[2].buttons[3].commands[2] = getCommand(PRESS_SYSEX, NEW_SESSION_MODE, CHANGE_MODE, LOOPER_MODE, 0 , 2);
-
-  loopers[0].buttons[3].commands[0] = getCommand(PRESS_SYSEX, LOOPER_MODE, TOGGLE_STOP_START, BOTH_TRACK_TYPES, QUANTIZED , 0);
+// //Teensy only has 1 timer, so handling in base class to avoid duplicates
+// void DataLooper::blink(){
+//   blinking = true;
+//   blinkTimer.begin(endBlink, 50000);
+// }
+// void DataLooper::endBlink(){
+//   blinkTimer.end();
+//   blinking = false;
+// }
+// //TODO on bank change, end timer!!
 
 
-  //NEW SESSION MODE COMMANDS
-  loopers[0].buttons[0].commands[3] = getCommand(PRESS_SYSEX, NEW_SESSION_MODE, RECORD, BOTH_TRACK_TYPES, UNQUANTIZED , 0);
-  loopers[1].buttons[0].commands[3] = getCommand(PRESS_SYSEX, NEW_SESSION_MODE, RECORD, BOTH_TRACK_TYPES, UNQUANTIZED , 1);
-  loopers[2].buttons[0].commands[3] = getCommand(PRESS_SYSEX, NEW_SESSION_MODE, RECORD, BOTH_TRACK_TYPES, UNQUANTIZED , 2);
-
-}
-DLCommand DataLooper::getCommand(unsigned char execute_on, unsigned char req_mode, unsigned char action, unsigned char data1, unsigned char data2, unsigned char looperNum){
-  return DLCommand(execute_on, req_mode, action, data1, data2, looperNum, &(loopers[looperNum].state));
-
-}

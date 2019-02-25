@@ -6,43 +6,51 @@
  * @author Vince Cimo
  * @version 1.0
  */
-
-#include "Looper.h"
-
-class DataLooper {
+#include <Arduino.h>
+#include <EEPROM.h>
+#include "IntervalTimer.h"
+#include "State.h"
+#include <Button.h>
+#include "dlconst.h"
+#include <WS2812Serial.h>
+#include "Observer.h"
+class DataLooper :  public DLObserver {
 
 	public:
 
-		DataLooper();
+	DataLooper(WS2812Serial * _leds);
         void init();
-        void loadConfig();
-		void checkConfig(long current_time);
-        void enterConfig();
-        void configureLoopers(int i,int n);
-        void diagnoseButton(int i, int n, int num);
-        void changeMode(unsigned char newMode);
-        void changeBank(unsigned char newBank);
+        WS2812Serial * leds;
+         void loadConfig();
+        // void diagnoseButton(int i, int n, int num);
+        // void changeMode(unsigned char newMode);
+        // void changeBank(unsigned char newBank);
         void onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool complete);
         void onProgramChange(byte channel, byte program);
-        void sendSysEx(int looper, int control, byte action, byte long_press_seconds);
-        void scanForButtonActivity(long current_time);
-        void blink();
-        DLCommand getCommand(unsigned char execute_on, unsigned char mode, unsigned char action, unsigned char data1, unsigned char data2, unsigned char looperNum);
-        static void endBlink();
-        void checkForBankChange();
+        void configureDL(const uint8_t * sysExData);
+        void writeCommand(uint8_t actionNum, ee_storage_typ command);
+        void offBeat();
+        // void sendSysEx(int looper, int control, byte action, byte long_press_seconds);
+        void scanForButtonActivity(unsigned long current_time);
+        void clearControlChanges(unsigned char _ccNum, unsigned char _ccValue);
+        void changeMode();
+        // void blink();
+        // DLCommand getCommand(unsigned char execute_on, unsigned char mode, unsigned char action, unsigned char data1, unsigned char data2, unsigned char looperNum);
+        // static void endBlink();
+        // void checkForBankChange();
         void checkForModeChange();
-        void setColor(unsigned char color);
-        void altModeCommands();
-
+        // void altModeCommands();
+        Button buttons[NUM_BUTTONS];
+        unsigned char ppqCounter = 0;
+        const unsigned char sysExStartByte = 4;
+        void loadAltModeCommands();
 	private:
         //PIN CONFIG
-        unsigned char led_pins[NUM_LOOPERS][LED_PINS] = {{3, 4, 6}, {9, 10, 16}, {17, 20, 22}};
-        unsigned char control_pins[NUM_LOOPERS][NUM_CONTROLS] = {{0, 1, 2, 5}, {7, 8, 11, 12}, {13, 14, 15, 18}};
         unsigned char channel;
-        long current_time;
-        Looper loopers[NUM_LOOPERS];
-        static IntervalTimer blinkTimer;
-        static boolean blinking;
+        // long current_time;
+        // static IntervalTimer blinkTimer;
+        // static boolean blinking;
+        elapsedMillis blinkTimer = 0;
 
 };
 

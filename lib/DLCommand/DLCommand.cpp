@@ -1,70 +1,86 @@
 #include "DLCommand.h"
 #include "State.h"
+#include <algorithm>
+#include <iterator>
 
-DLCommand::DLCommand() : execute_on(255), command_mode(255), action(255), data1(255), data2(255) {} 
-DLCommand::DLCommand(unsigned char _execute_on, unsigned char _command_mode, unsigned char _action, unsigned char _data1, unsigned char _data2, unsigned char _looperNum, unsigned char *_state) : execute_on(_execute_on), command_mode(_command_mode), action(_action), data1(_data1), data2(_data2), looperNum(_looperNum), state(_state)
+DLCommand::DLCommand(){}
+DLCommand::DLCommand(uint64_t command, WS2812Serial * _leds, unsigned char _buttonNum, DLObserver* _dataLooper):  leds(_leds), buttonNum(_buttonNum), dataLooper(_dataLooper)
 {
- 
+    ee_storage.the_big_blob = command;
 }
 
+void DLCommand::execute(){
 
-void DLCommand::execute() const{
-    Serial.println();
-    if(command_mode == State::mode){
-        checkForSpecialCommands();
-        Serial.println();
-        Serial.print("execute on: ");
-        Serial.print(execute_on);
-        Serial.print(" , action: ");
-        Serial.print(action);
-        Serial.print(" , data1: ");
-        Serial.print(data1);
-        Serial.print(" , data2: ");
-        Serial.print(data2);
-        Serial.println();
-        unsigned char iterative_value = (State::instance * (NUM_BANKS * NUM_LOOPERS * NUM_CONTROLS))+(State::bank * NUM_LOOPERS * NUM_CONTROLS) + data1;
-        switch(execute_on % NUMBER_DATATYPES){
+        switch(ee_storage.commands.action){
             case NOTE_ON:
-                usbMIDI.sendNoteOn ( iterative_value, data2, MIDI_CHAN);
+                usbMIDI.sendNoteOn ( ee_storage.commands.data1, ee_storage.commands.data2, ee_storage.commands.data3);
+                checkLed(true);
                 break;
             case NOTE_OFF:
-                usbMIDI.sendNoteOff ( iterative_value, 0, MIDI_CHAN);
+                usbMIDI.sendNoteOff ( ee_storage.commands.data1, 0, ee_storage.commands.data3);
+                checkLed(false);
+                break;
+            case NOTE_TOGGLE:
+                if(!noteToggle){
+                    usbMIDI.sendNoteOn ( ee_storage.commands.data1, ee_storage.commands.data2, ee_storage.commands.data3);
+                    noteToggle = true;
+                } else{
+                    usbMIDI.sendNoteOff ( ee_storage.commands.data1, 0, ee_storage.commands.data3);
+                    noteToggle = false;
+                }
+                checkLed(noteToggle);
+                break;
+            case CC_TOGGLE:
+                Serial.println("CC Toggle");
+                if(!ccToggle){
+                    usbMIDI.sendControlChange ( ee_storage.commands.data1, ee_storage.commands.data2, ee_storage.commands.data4);
+                    ccToggle = true;
+                } else{
+                    usbMIDI.sendControlChange ( ee_storage.commands.data1, ee_storage.commands.data3, ee_storage.commands.data4);
+                    ccToggle = false;
+                }
+                checkLed(ccToggle);
                 break;
             case CC:
-                usbMIDI.sendControlChange ( iterative_value, data2, MIDI_CHAN);
+                dataLooper->clearControlChanges(ee_storage.commands.data1, ee_storage.commands.data2);
+                usbMIDI.sendControlChange ( ee_storage.commands.data1, ee_storage.commands.data2, ee_storage.commands.data3);
+                checkLed(true);
+
                 break;
             case PROGRAM_CHANGE:
-                usbMIDI.sendProgramChange ( iterative_value, MIDI_CHAN);
+                usbMIDI.sendProgramChange ( ee_storage.commands.data1, 1);
+                break;
+            case DATALOOPER_SPECIFIC:
+                checkDLCommands();
                 break;
             case SYSEX:
-                byte sending = 0x12;
-                Serial.print((byte) action);
-                byte array[] = {0x41, (byte) State::instance, (byte) State::bank, (byte) looperNum, (byte) State::mode, (byte) action, (byte) data1, (byte) data2, sending, 0xF7};
-                usbMIDI.sendSysEx(9, array, false);
+                Serial.println("Sending sysex");
+                byte array[] = {0x1E, ee_storage.commands.data1, ee_storage.commands.data2, ee_storage.commands.data3, ee_storage.commands.data4, ee_storage.commands.data5};
+                usbMIDI.sendSysEx(6, array, false);
                 break;
         }
-    }
-    
 }
 
-void DLCommand::checkForSpecialCommands() const{
-    switch (action){
-        case CHANGE_MODE:
-            Serial.print("changing mode");
-            State::mode = data1;
+void DLCommand::checkDLCommands(){
+    switch(ee_storage.commands.data1){
+        case DLACTIONS.CHANGE_MODE:
+            Serial.println("changing mode");
+            State::mode = ee_storage.commands.data2;          
             break;
-        case CHANGE_BANK:
-            if (State::abletonConnected == 0 && ((data1 == 1 && *state == STATE_CLEAR) || data1 == 0)){
-                Serial.print("changing bank");
-              State::bank = looperNum;
-            }
-            
-            break;
-        case CHANGE_INSTANCE:
-            Serial.print("Changing instance");
-            State::instance = data1;
-            break;
-        default:
-            break;
+    }
+}
+
+
+void DLCommand::checkLed(bool onOff){
+    if(onOff){
+        Serial.print("setting pixel: ");
+        Serial.println(buttonNum);
+        leds->setPixel(LED_NUMBERS[buttonNum], WHT.rgb);
+        leds->show();
+    } else{
+        Serial.print("setting pixel off: ");
+        Serial.println(buttonNum);
+        leds->setPixel(LED_NUMBERS[buttonNum], NONE.rgb );
+        leds->show();
     }
 }

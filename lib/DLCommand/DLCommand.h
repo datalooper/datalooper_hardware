@@ -8,21 +8,24 @@
  */
 #include <Arduino.h>
 #include "dlconst.h"
+#include <WS2812Serial.h>
+#include "Observer.h"
 class DLCommand {
 
 	public:
-        DLCommand(unsigned char _execute_on, unsigned char _command_mode, unsigned char _action, unsigned char _data1, unsigned char _data2, unsigned char looperNum, unsigned char *_state);
-        DLCommand();
-        unsigned char * state;
-        unsigned char execute_on;
-        unsigned char command_mode;
-        unsigned char action;
-        unsigned char data1;
-        unsigned char data2;
-        unsigned char looperNum;
-        void sendSysEx(); 
-        void execute() const;
-        void checkForSpecialCommands() const;
+                DLCommand();
+                DLCommand(uint64_t command, WS2812Serial * _leds, unsigned char _buttonNum, DLObserver * _dataLooper);
+                DLObserver * dataLooper;
+                unsigned char buttonNum;
+                WS2812Serial* leds;
+                unsigned char * state;
+                bool noteToggle = false;
+                bool ccToggle = false;
+                void sendSysEx(); 
+                void execute();
+                void checkLed(bool onOff);
+                void checkDLCommands();
+                ee_storage_typ ee_storage;
 };
 
 #endif
