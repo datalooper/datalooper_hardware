@@ -47,7 +47,9 @@ static const unsigned char ABLETON_CONNECTED = 6;
 static const unsigned char CONFIG = 7;
 
 
-static const unsigned char NUMBER_COMMANDS = 2;
+static const unsigned char NUMBER_USER_COMMANDS = 2;
+static const unsigned char NUMBER_COMMANDS = 5;
+
 static const unsigned char BYTES_PER_COMMAND = 6;
 static const unsigned char SYSEX_BYTES_PER_COMMAND = 9;
 
@@ -71,7 +73,7 @@ const unsigned char DEBOUNCE_TIME = 25;
 
 //ACTIONS
 const unsigned char TAP_TEMPO_BUTTON_NUM = 7;
-const unsigned char EXIT_NEW_SESSION_BUTTON_NUM = 3;
+const unsigned char EXIT_BUTTON_NUM = 3;
 
 constexpr struct LState
 {
@@ -87,7 +89,8 @@ constexpr struct modes
 	int USER_MODE;
 	int NEW_SESSION_MODE;
 	int CLIP_LAUNCH_MODE;
-} MODES = {0, 1, 2};
+	int ALL_BUT_USER;
+} MODES = {0, 1, 2, 3};
 
 constexpr struct buttonActions
 {
@@ -109,7 +112,11 @@ constexpr struct actions
 	int MUTE_CONTROL;
 	int TRANSPORT_CONTROL;
 	int SCENE_CONTROL;
-} ACTIONS = {0, 1, 2, 3, 4, 5, 6, 7};
+	int CHANGE_MODE;
+	int CHANGE_INSTANCE;
+	int MOVE_SESSION_HIGHLIGHT;
+	int REQUEST_STATE;
+} ACTIONS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
 
 constexpr struct dlactions
 {
@@ -154,9 +161,9 @@ typedef union
 typedef struct
 {
 	/* data */	
-	uint8_t red : 8;
-	uint8_t green : 8;
 	uint8_t blue : 8;
+	uint8_t green : 8;
+	uint8_t red : 8;
 } rgbType;
 
 typedef union 

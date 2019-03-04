@@ -13,6 +13,7 @@ class State
     static unsigned char lastBank;
     static unsigned char lastInstance;
     static unsigned char inConfig;
+    static bool modeChanging;
     static elapsedMillis configExitMillis;
     static char currentConfigButton;
     static bool transportRunning;

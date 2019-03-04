@@ -12,4 +12,5 @@ char State::currentConfigButton = -1;
 elapsedMillis State::configExitMillis = 0;
 bool State::transportRunning = false;
 bool State::blinking = false;
+bool State::modeChanging = false;
 

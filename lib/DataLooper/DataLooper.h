@@ -20,6 +20,7 @@ class DataLooper :  public DLObserver {
 
 	DataLooper(WS2812Serial * _leds);
         void init();
+        void onControlChange(uint8_t channel, uint8_t control, uint8_t value);
         WS2812Serial * leds;
          void loadConfig();
         // void diagnoseButton(int i, int n, int num);
@@ -51,7 +52,7 @@ class DataLooper :  public DLObserver {
         // static IntervalTimer blinkTimer;
         // static boolean blinking;
         elapsedMillis blinkTimer = 0;
-
+        void mapColors(unsigned char buttonNum, unsigned char red, unsigned char green, unsigned char blue);
 };
 
 #endif

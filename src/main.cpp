@@ -18,7 +18,9 @@ void onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool complete)
 void onProgramChange(byte channel, byte program){
   dataLooper.onProgramChange(channel, program);
 }
-
+void onCC(uint8_t channel, uint8_t control, uint8_t value){
+  dataLooper.onControlChange(channel, control, value);
+}
 void onStart(){
   State::transportRunning = true;
 }
@@ -34,6 +36,7 @@ void setup()
   usbMIDI.begin();
   // registers sysex handler
   usbMIDI.setHandleSystemExclusive(onSysEx);
+  usbMIDI.setHandleControlChange(onCC);
 
   // registers program change handler
   usbMIDI.setHandleProgramChange(onProgramChange);

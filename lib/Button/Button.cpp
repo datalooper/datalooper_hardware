@@ -9,9 +9,10 @@
  */
 
 Button::Button(){}
+
 void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsigned char _ledNumber, WS2812Serial *_leds, DLObserver* _dataLooper){
      buttonNumber = _buttonNumber; //Do I have to know the button?
-     leds = _leds;
+     led.init(_leds, _buttonNumber);
      ledNumber = _ledNumber;
      dataLooper = _dataLooper;
      pinMode(control_pin, INPUT_PULLUP);
@@ -26,6 +27,7 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
  void Button::update(unsigned long current_time){
      bounce.update();
      //On Press
+     
      if(bounce.fallingEdge()){
          if (press_time != -1 &&  current_time - press_time <= DOUBLE_HIT_TIME){
              onMultiPress();
@@ -35,6 +37,7 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
      }
      //On Release
      else if(bounce.risingEdge()){
+         State::modeChanging = false; 
          if (press_time == -1){
              onMultiRelease();
          } else if(long_pressed){
@@ -48,18 +51,23 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
      if(is_pressed && current_time - press_time >= long_press_time){
          onLongPress();
      }
+
+     if(isFastBlinking && fastBlinkTimer > 140){
+         led.writeColor(NONE);
+         fastBlinkTimer = 0;
+     } else if(isFastBlinking && fastBlinkTimer > 50){
+        led.restoreColor();
+     }
  }
     
  void Button::onPress(unsigned long current_time){
-     Serial.print("press");
-     Serial.println();
+     Serial.println("press");
      press_time = current_time;
      is_pressed = true;
      checkCommands(0);
  }
  void Button::onRelease(){
-     Serial.print("release");
-     Serial.println();
+     Serial.println("release");
      is_pressed = false;
      long_press_time = 500;
      checkCommands(1);
@@ -73,8 +81,7 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
      }
  }
  void Button::onMultiRelease(){
-     Serial.print("multi-release");
-     Serial.println();
+     Serial.println("multi-release");
      is_pressed = false;
      long_press_time = 500;
      if(!checkCommands(3)){
@@ -82,14 +89,16 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
      }
  }
  void Button::onLongPress(){
-     Serial.print("long-press");
-
+     Serial.println("long-press");
+     if(long_press_time == 500){
+        checkCommands(4);
+     }
      long_press_time += 500;
      long_pressed = true;
-     checkCommands(4);
+     
  }
  void Button::onLongRelease(){
-     Serial.print("long-release");
+     Serial.println("long-release");
 
      is_pressed = false;
      long_pressed = false;
@@ -97,52 +106,34 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
      checkCommands(5);
  }
 
- bool Button::checkNewSessionCommands(){
-     switch(buttonNumber){
-        case EXIT_NEW_SESSION_BUTTON_NUM:
-            State::mode = MODES.USER_MODE;
-            break;
-        case TAP_TEMPO_BUTTON_NUM:
-            Serial.println("tap tempo");
-            byte array[] = {0x1E, 10, 4, 0, 0, 0};
-            usbMIDI.sendSysEx(6, array, false);
-            break;
 
-     }
-     return false;
- }
+
  bool Button::checkCommands(unsigned char execute_on){
-     if(State::mode == MODES.CLIP_LAUNCH_MODE){
-         return false;
-     } else{
-        //Checks for new session mode specific commands
-        if(State::mode == MODES.NEW_SESSION_MODE && execute_on == BUTTON_ACTIONS.PRESS){
-            return checkNewSessionCommands();
-        }
-        
+  
         //Iterate through all commands loaded from EEPROM. Only 1 bank of commands loaded at a time to save runtime memory
+        bool exec = false;
         for (int x=0; x < NUMBER_COMMANDS; x++){
-            //diagnoseCommand(execute_on, x);
-
             //Check if button action matches command action
             if(commands[x].ee_storage.commands.button_action == execute_on){
 
                 //If current mode is NEW_SESSION_MODE, modify looper record commands for unquantized recording
-                if(State::mode == MODES.NEW_SESSION_MODE && isLooperRecordCommand()){
+                if(State::mode == MODES.NEW_SESSION_MODE && isLooperRecordButton()){
                     DLCommand tempRec = commands[x];
                     //Changing record to unquantized
                     tempRec.ee_storage.commands.data4 = 0;
                     tempRec.execute();
+                    exec = true;
                 } 
                 //If in another mode (right now, just user mode), execute the command normally.
-                else if(State::mode == commands[x].ee_storage.commands.mode) {
+                else if(State::mode == commands[x].ee_storage.commands.mode || (commands[x].ee_storage.commands.mode == MODES.ALL_BUT_USER && State::mode != MODES.USER_MODE)) {
                     commands[x].execute();
+                    exec = true;
                 }
-                    return true;
+                    
             }
         }
-     }
-     return false;
+
+        return exec;
 
  }
 void Button::diagnoseCommand(unsigned char execute_on, unsigned char x){
@@ -156,95 +147,146 @@ void Button::diagnoseCommand(unsigned char execute_on, unsigned char x){
     Serial.print(" : ");
     Serial.println(execute_on);
 }
+void Button::addCommand(ee_storage_typ command, unsigned char commandNum){
+    commands[commandNum] = DLCommand(command.the_big_blob, &led, buttonNumber, dataLooper);
+}
  void Button::loadCommands(){
+     shouldBlink = false;
      for(unsigned char x = 0; x < NUMBER_COMMANDS; x++){
-         unsigned char startByte = (buttonNumber * NUMBER_COMMANDS * BYTES_PER_COMMAND) + (x * BYTES_PER_COMMAND);
-         ee_storage_typ cmdBytes;
+         if(x < NUMBER_USER_COMMANDS){
+            unsigned char startByte = (buttonNumber * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND) + (x * BYTES_PER_COMMAND);
+            ee_storage_typ cmdBytes;
 
-		 for(unsigned char n = 0; n < BYTES_PER_COMMAND; n++){
-			 cmdBytes.asBytes[n] = EEPROM.read(startByte + n);
-		 }
-			 commands[x] = DLCommand(cmdBytes.the_big_blob, leds, buttonNumber, dataLooper);
-    }
+            for(unsigned char n = 0; n < BYTES_PER_COMMAND; n++){
+                cmdBytes.asBytes[n] = EEPROM.read(startByte + n);
+            }
+                commands[x] = DLCommand(cmdBytes.the_big_blob, &led, buttonNumber, dataLooper);
+                if(shouldButtonBlink(commands[x])){
+                    shouldBlink = true;
+                } 
+        } else{
+                ee_storage_typ dummyCmd;
+                dummyCmd.commands.button_action = 127;
+                dummyCmd.commands.action = 127;
+                commands[x] = DLCommand(dummyCmd.the_big_blob, &led, 127, dataLooper);
+        }
+     }
+     
  }
- bool Button::isLooperRecordCommand(){
-     for(int x=0; x<NUMBER_COMMANDS; x++){
-        if( commands[x].ee_storage.commands.action == SYSEX && commands[x].ee_storage.commands.data1 == 1 && commands[x].ee_storage.commands.data3 == 0){
+
+ bool Button::shouldButtonBlink(DLCommand command){
+     if( command.ee_storage.commands.action == SYSEX && command.ee_storage.commands.data1 == 1 && command.ee_storage.commands.data3 == 0 && command.ee_storage.commands.mode == State::mode){
+            return true;
+        }
+    return false;
+ }
+
+ void Button::toggleBlink(unsigned char blinkType){
+     switch(blinkType){
+         case 0:
+            shouldBlink = false;
+            fastBlink(false);
+            break;
+        case 1:
+            shouldBlink = true;
+            fastBlink(false);
+            break;
+        case 2:
+            shouldBlink = false;
+            fastBlink(true);
+            break;
+     }
+ }
+ void Button::requestState(){
+
+     for(unsigned char x =0; x< NUMBER_COMMANDS; x++){
+         commands[x].requestState();
+     }
+ }
+ bool Button::isLooperRecordButton(){
+     for(int x=0; x<NUMBER_USER_COMMANDS; x++){
+        if( commands[x].ee_storage.commands.action == SYSEX && commands[x].ee_storage.commands.data1 == 1 && commands[x].ee_storage.commands.data3 == 0 && commands[x].ee_storage.commands.mode == State::mode){
             return true;
         }
      }
      return false;
  }
+ 
  void Button::clearControlChanges(unsigned char _ccNum, unsigned char _ccValue){
-     for(unsigned char x = 0; x < NUMBER_COMMANDS; x++){
+     for(unsigned char x = 0; x < NUMBER_USER_COMMANDS; x++){
          if(commands[x].ee_storage.commands.action == CC && commands[x].ee_storage.commands.data1 == _ccNum && commands[x].ee_storage.commands.data2 != _ccValue && commands[x].ee_storage.commands.led_control) {
-             setColor(NONE);
+             led.setColor(NONE);
          }
      }
  }
- void Button::setColor(colorType color){
-     curColor = color;
-     if(color.rgb != NONE.rgb){
-        Serial.print("red: ");
-        Serial.println(curColor.colors.red);
-        Serial.print("blue: ");
-        Serial.println(curColor.colors.blue);
-        Serial.print("green: ");
-        Serial.println(curColor.colors.green);
-    }
-    writeColor(curColor);
- }
 
- void Button::restoreColor(){
-     writeColor(curColor);
- }
-void Button::writeColor(colorType color){
-     leds->setPixel(ledNumber, color.rgb);
-     leds->show();
+void Button::onControlChange(uint8_t channel, uint8_t control, uint8_t value){
+    for(int x=0; x<NUMBER_USER_COMMANDS; x++){
+        if( commands[x].ee_storage.commands.action == CC_TOGGLE && commands[x].ee_storage.commands.data1 == control && value > 0 && commands[x].ee_storage.commands.data4 == channel){
+            led.setColor(WHT);
+        } else if(commands[x].ee_storage.commands.action == CC_TOGGLE && commands[x].ee_storage.commands.data1 == control &&  value == 0 && commands[x].ee_storage.commands.data4 == channel){
+            led.setColor(NONE);
+        }
+    }
 }
 void Button::onBeat(unsigned char beatNum){
-    if(isLooperRecordCommand() && State::mode == MODES.USER_MODE){
+    if(shouldBlink){
         //Serial.println("on beat");
-        writeColor(NONE);            
+        led.writeColor(NONE);            
         return;               
     }
     
 }
 void Button::unBlink(){
-    if(isLooperRecordCommand()){
+    if(shouldBlink){
         //Serial.println("restoring");
-        restoreColor();
+        led.restoreColor();
         return;               
     }
+}
 
+void Button::fastBlink(bool shouldFastBlink){
+    if(shouldFastBlink){
+        Serial.print("fast blinking #");
+        Serial.println(shouldFastBlink);
+        isFastBlinking = true;
+        fastBlinkTimer = 0;
+    } else{
+        Serial.print("fast blinking off #");
+        Serial.println(shouldFastBlink);
+        isFastBlinking = false;
+        led.restoreColor();
+    }
 }
 
 void Button::changeMode(){
+    led.setColor(NONE);
     switch(State::mode){
         case MODES.USER_MODE:
-            if(curColor.rgb == PURPLE.rgb && isLooperRecordCommand()){
-                setColor(WHT);
+            if(led.curColor.rgb == PURPLE.rgb && isLooperRecordButton()){
+                led.setColor(WHT);
             }
+            led.restoreColor();
         break;
         case MODES.NEW_SESSION_MODE:
             Serial.println("New Session Mode");
-            if(isLooperRecordCommand()) {
-                setColor(PURPLE);
+            if(isLooperRecordButton()) {
+                led.setColor(PURPLE);
             }
         break;
         case MODES.CLIP_LAUNCH_MODE:
-
+            
         break;
     }
 }
-void Button::onLooperStateChange(unsigned char _looperNum, unsigned char _looperState){
+bool Button::onLooperStateChange(unsigned char _looperNum){
     // Serial.println("in state change");
     // Serial.print("looper num: ");
     // Serial.println(_looperNum);
     // Serial.print("button number: ");
     // Serial.println(buttonNumber);
 
-    for(unsigned char x = 0; x < NUMBER_COMMANDS; x++){
+    for(unsigned char x = 0; x < NUMBER_USER_COMMANDS; x++){
             // Serial.print("action: ");
             // Serial.println((unsigned char) commands[x].ee_storage.commands.action);
             // Serial.print("data1: ");
@@ -252,25 +294,32 @@ void Button::onLooperStateChange(unsigned char _looperNum, unsigned char _looper
             // Serial.print("data2: ");
             // Serial.println((unsigned char) commands[x].ee_storage.commands.data2);
          if(commands[x].ee_storage.commands.action == SYSEX && commands[x].ee_storage.commands.data1 == 1 && commands[x].ee_storage.commands.data2 == _looperNum+1 && commands[x].ee_storage.commands.data3 == 0) {
-             switch(_looperState){
+             return true;
+         }
+         return false;
+     }
+}
+
+void Button::updateLooperState(unsigned char _looperState){
+    switch(_looperState){
                  case looper_state.RECORDING:
-                    setColor(RED);
+                    led.setColor(RED);
                     break;
                  case looper_state.STOPPED:
-                    setColor(BLUE);
+                    led.setColor(BLUE);
                     break;
                  case looper_state.OVERDUBBING:
-                    setColor(YELLOW);
+                    led.setColor(YELLOW);
                     break;
                  case looper_state.CLEAR:
                     if(State::mode == MODES.USER_MODE){
-                        setColor(WHT);
+                        led.setColor(WHT);
                     } else if(State::mode == MODES.NEW_SESSION_MODE){
-                        setColor(PURPLE);
+                        led.setColor(PURPLE);
                     }
                     break;
                 case looper_state.PLAYING:
-                    setColor(GREEN);
+                    led.setColor(GREEN);
                     if(State::mode == MODES.NEW_SESSION_MODE){
                         State::mode = MODES.USER_MODE;
                         Serial.println("exiting new session mode");
@@ -279,6 +328,4 @@ void Button::onLooperStateChange(unsigned char _looperNum, unsigned char _looper
                  default:
                     break;
              }
-         }
-     }
 }

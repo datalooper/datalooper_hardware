@@ -10,14 +10,15 @@
 #include "dlconst.h"
 #include <WS2812Serial.h>
 #include "Observer.h"
+#include "DLled.h"
 class DLCommand {
 
 	public:
                 DLCommand();
-                DLCommand(uint64_t command, WS2812Serial * _leds, unsigned char _buttonNum, DLObserver * _dataLooper);
+                DLCommand(uint64_t command, DLled * _led, unsigned char _buttonNum, DLObserver * _dataLooper);
                 DLObserver * dataLooper;
                 unsigned char buttonNum;
-                WS2812Serial* leds;
+                DLled* led;
                 unsigned char * state;
                 bool noteToggle = false;
                 bool ccToggle = false;
@@ -25,6 +26,7 @@ class DLCommand {
                 void execute();
                 void checkLed(bool onOff);
                 void checkDLCommands();
+                void requestState();
                 ee_storage_typ ee_storage;
 };
 
