@@ -189,24 +189,21 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
         break;      
       case 1:
         //state change
-        //Serial.print("looper #:");
-        //Serial.println(sysExData[3]);
-        //Serial.print("state:");
-        //Serial.print(sysExData[4]);
+        Serial.print("state:");
+        Serial.println(sysExData[4]);
         if(State::mode != MODES.CLIP_LAUNCH_MODE){
-          for(int x=0; x<NUM_BUTTONS; x++){
-            if(buttons[x].onLooperStateChange(sysExData[3])){
-              buttons[x].fastBlink(false);
-              buttons[x].updateLooperState(sysExData[4]);
-            }
-          }
+          buttons[sysExData[3]].fastBlink(false);
+          buttons[sysExData[3]].updateLooperState(sysExData[4]);
         }
         break;
       case 2:
         Serial.println("looper command requested");
         for(int x=0; x<NUM_BUTTONS; x++){
             if(buttons[x].onLooperStateChange(sysExData[3])){
-              buttons[x].fastBlink(true);
+              //If not undo command, indicate fast blink for requested command
+              if(sysExData[4] - sysExData[3] * 4 != 2){
+                buttons[x].fastBlink(true);
+              }
             }
           }
         usbMIDI.sendNoteOn(sysExData[4],127,14);

@@ -6,7 +6,7 @@
 const unsigned char NUM_BANKS = 3;
 const unsigned char NUM_BUTTONS = 12;
 const unsigned char LED_PIN = 24;
-const unsigned char BUTTON_PINS[NUM_BUTTONS] = {8,9,10,11,4,5,6,7,0,1,2,3};
+const unsigned char BUTTON_PINS[NUM_BUTTONS] = {8,9,10,11,4,5,6,7,0,1,2,12};
 const unsigned char LED_NUMBERS[NUM_BUTTONS] = {4,10,5,11,2,8,3,9,0,6,1,7};
 
 
@@ -82,7 +82,8 @@ constexpr struct LState
 	int PLAYING;
 	int OVERDUBBING;
 	int CLEAR;
-} looper_state = { 0, 1, 2, 3, 4};
+	int OFF;
+} looper_state = { 0, 1, 2, 3, 4, 5};
 
 constexpr struct modes
 {

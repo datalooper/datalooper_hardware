@@ -5,7 +5,7 @@ void DLled::init(WS2812Serial * _leds, unsigned char _buttonNum) {
     buttonNum = _buttonNum;
 }
 
- void DLled::   setColor(colorType color){
+ void DLled::setColor(colorType color){
      curColor = color;
     //  if(color.rgb != NONE.rgb){
     //     Serial.print("red: ");

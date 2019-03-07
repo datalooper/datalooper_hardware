@@ -118,9 +118,10 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
 
                 //If current mode is NEW_SESSION_MODE, modify looper record commands for unquantized recording
                 if(State::mode == MODES.NEW_SESSION_MODE && isLooperRecordButton()){
+                    Serial.println("unquantized recording");
                     DLCommand tempRec = commands[x];
                     //Changing record to unquantized
-                    tempRec.ee_storage.commands.data4 = 0;
+                    tempRec.ee_storage.commands.data3 = 1;
                     tempRec.execute();
                     exec = true;
                 } 
@@ -205,7 +206,7 @@ void Button::addCommand(ee_storage_typ command, unsigned char commandNum){
  }
  bool Button::isLooperRecordButton(){
      for(int x=0; x<NUMBER_USER_COMMANDS; x++){
-        if( commands[x].ee_storage.commands.action == SYSEX && commands[x].ee_storage.commands.data1 == 1 && commands[x].ee_storage.commands.data3 == 0 && commands[x].ee_storage.commands.mode == State::mode){
+        if( commands[x].ee_storage.commands.action == SYSEX && commands[x].ee_storage.commands.data1 == 1 && commands[x].ee_storage.commands.data3 == 0 && commands[x].ee_storage.commands.mode == MODES.USER_MODE){
             return true;
         }
      }
@@ -230,8 +231,11 @@ void Button::onControlChange(uint8_t channel, uint8_t control, uint8_t value){
     }
 }
 void Button::onBeat(unsigned char beatNum){
+    // Serial.print("button #");
+    // Serial.print(buttonNumber);
+    // Serial.print(" Shouldblink:");
+    // Serial.println(shouldBlink);
     if(shouldBlink){
-        //Serial.println("on beat");
         led.writeColor(NONE);            
         return;               
     }
@@ -248,12 +252,12 @@ void Button::unBlink(){
 void Button::fastBlink(bool shouldFastBlink){
     if(shouldFastBlink){
         Serial.print("fast blinking #");
-        Serial.println(shouldFastBlink);
+        Serial.println(buttonNumber);
         isFastBlinking = true;
         fastBlinkTimer = 0;
     } else{
         Serial.print("fast blinking off #");
-        Serial.println(shouldFastBlink);
+        Serial.println(buttonNumber);
         isFastBlinking = false;
         led.restoreColor();
     }
@@ -263,15 +267,17 @@ void Button::changeMode(){
     led.setColor(NONE);
     switch(State::mode){
         case MODES.USER_MODE:
-            if(led.curColor.rgb == PURPLE.rgb && isLooperRecordButton()){
-                led.setColor(WHT);
+            Serial.println("User Mode");
+            if(isLooperRecordButton()){
+                shouldBlink = true;
             }
             led.restoreColor();
         break;
         case MODES.NEW_SESSION_MODE:
-            Serial.println("New Session Mode");
             if(isLooperRecordButton()) {
+                Serial.println("New Session Mode");
                 led.setColor(PURPLE);
+                shouldBlink = false;
             }
         break;
         case MODES.CLIP_LAUNCH_MODE:
@@ -280,19 +286,7 @@ void Button::changeMode(){
     }
 }
 bool Button::onLooperStateChange(unsigned char _looperNum){
-    // Serial.println("in state change");
-    // Serial.print("looper num: ");
-    // Serial.println(_looperNum);
-    // Serial.print("button number: ");
-    // Serial.println(buttonNumber);
-
     for(unsigned char x = 0; x < NUMBER_USER_COMMANDS; x++){
-            // Serial.print("action: ");
-            // Serial.println((unsigned char) commands[x].ee_storage.commands.action);
-            // Serial.print("data1: ");
-            // Serial.println((unsigned char) commands[x].ee_storage.commands.data1);
-            // Serial.print("data2: ");
-            // Serial.println((unsigned char) commands[x].ee_storage.commands.data2);
          if(commands[x].ee_storage.commands.action == SYSEX && commands[x].ee_storage.commands.data1 == 1 && commands[x].ee_storage.commands.data2 == _looperNum+1 && commands[x].ee_storage.commands.data3 == 0) {
              return true;
          }
@@ -324,6 +318,9 @@ void Button::updateLooperState(unsigned char _looperState){
                         State::mode = MODES.USER_MODE;
                         Serial.println("exiting new session mode");
                     }
+                    break;
+                case looper_state.OFF:
+                    led.setColor(NONE);
                     break;
                  default:
                     break;
