@@ -14,6 +14,7 @@
 #include "dlconst.h"
 #include <WS2812Serial.h>
 #include "Observer.h"
+#include "Wire.h"
 class DataLooper :  public DLObserver {
 
 	public:
@@ -43,8 +44,23 @@ class DataLooper :  public DLObserver {
         // void altModeCommands();
         Button buttons[NUM_BUTTONS];
         unsigned char ppqCounter = 0;
-        const unsigned char sysExStartByte = 4;
         void loadAltModeCommands();
+        void loadCommands();
+        void beginMIDI();
+        void sendNoteOn(uint8_t inNoteNumber,
+                           uint8_t inVelocity,
+                           uint8_t inChannel);
+        void sendNoteOff(uint8_t inNoteNumber,
+                            uint8_t inVelocity,
+                            uint8_t inChannel);
+        void sendProgramChange(uint8_t inProgramNumber,
+                                  uint8_t inChannel);
+        void sendControlChange(uint8_t inControlNumber,
+                                  uint8_t inControlValue,
+                                  uint8_t inChannel);
+        void sendSysEx(unsigned inLength,
+                          const byte* inArray,
+                          bool inArrayContainsBoundaries = false);
 	private:
         //PIN CONFIG
         unsigned char channel;
@@ -53,6 +69,10 @@ class DataLooper :  public DLObserver {
         // static boolean blinking;
         elapsedMillis blinkTimer = 0;
         void mapColors(unsigned char buttonNum, unsigned char red, unsigned char green, unsigned char blue);
+        void requestState();
+        byte readByte(uint8_t daddr, uint8_t curByte);
+        void checkForWriteCompletion();
+        void endConfig();
 };
 
 #endif

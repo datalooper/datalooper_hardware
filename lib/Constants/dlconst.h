@@ -6,8 +6,8 @@
 const unsigned char NUM_BANKS = 3;
 const unsigned char NUM_BUTTONS = 12;
 const unsigned char LED_PIN = 24;
-const unsigned char BUTTON_PINS[NUM_BUTTONS] = {8,9,10,11,4,5,6,7,0,1,2,12};
-const unsigned char LED_NUMBERS[NUM_BUTTONS] = {4,10,5,11,2,8,3,9,0,6,1,7};
+const unsigned char BUTTON_PINS[NUM_BUTTONS] = {8,9,1,11,4,5,6,7,0,15,2,12};
+const unsigned char LED_NUMBERS[NUM_BUTTONS] = {8,9,10,11,7,6,5,4,0,1,2,3};
 
 
 //STATE
@@ -49,7 +49,7 @@ static const unsigned char CONFIG = 7;
 
 static const unsigned char NUMBER_USER_COMMANDS = 2;
 static const unsigned char NUMBER_COMMANDS = 5;
-
+static const unsigned char NUMBER_PRESETS = 3;
 static const unsigned char BYTES_PER_COMMAND = 6;
 static const unsigned char SYSEX_BYTES_PER_COMMAND = 9;
 
@@ -75,54 +75,58 @@ const unsigned char DEBOUNCE_TIME = 25;
 const unsigned char TAP_TEMPO_BUTTON_NUM = 7;
 const unsigned char EXIT_BUTTON_NUM = 3;
 
+
+const unsigned char sysExStartByte = 4;
+
 constexpr struct LState
 {
-	int STOPPED;
-	int RECORDING;
-	int PLAYING;
-	int OVERDUBBING;
-	int CLEAR;
-	int OFF;
+	unsigned char STOPPED;
+	unsigned char RECORDING;
+	unsigned char PLAYING;
+	unsigned char OVERDUBBING;
+	unsigned char CLEAR;
+	unsigned char OFF;
 } looper_state = { 0, 1, 2, 3, 4, 5};
 
 constexpr struct modes
 {
-	int USER_MODE;
-	int NEW_SESSION_MODE;
-	int CLIP_LAUNCH_MODE;
-	int ALL_BUT_USER;
+	unsigned char USER_MODE;
+	unsigned char NEW_SESSION_MODE;
+	unsigned char CLIP_LAUNCH_MODE;
+	unsigned char ALL_BUT_USER;
 } MODES = {0, 1, 2, 3};
 
 constexpr struct buttonActions
 {
-	int PRESS;
-	int RELEASE;
-	int MULTI_PRESS;
-	int MULTI_RELEASE;
-	int LONG_PRESS;
-	int LONG_RELEASE;
+	unsigned char PRESS;
+	unsigned char RELEASE;
+	unsigned char MULTI_PRESS;
+	unsigned char MULTI_RELEASE;
+	unsigned char LONG_PRESS;
+	unsigned char LONG_RELEASE;
 } BUTTON_ACTIONS = {0, 1, 2, 3, 4, 5};
 
 constexpr struct actions
 {
-	int METRO_CONTROL;
-	int LOOPER_CONTROL;
-	int TAP_TEMPO;
-	int FIXED_CLIP_CONTROL;	
-	int STOP_START_ALL;
-	int MUTE_CONTROL;
-	int TRANSPORT_CONTROL;
-	int SCENE_CONTROL;
-	int CHANGE_MODE;
-	int CHANGE_INSTANCE;
-	int MOVE_SESSION_HIGHLIGHT;
-	int REQUEST_STATE;
-} ACTIONS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+	unsigned char METRO_CONTROL;
+	unsigned char LOOPER_CONTROL;
+	unsigned char TAP_TEMPO;
+	unsigned char FIXED_CLIP_CONTROL;	
+	unsigned char STOP_START_ALL;
+	unsigned char MUTE_CONTROL;
+	unsigned char TRANSPORT_CONTROL;
+	unsigned char SCENE_CONTROL;
+	unsigned char CHANGE_MODE;
+	unsigned char CHANGE_INSTANCE;
+	unsigned char MOVE_SESSION_HIGHLIGHT;
+	unsigned char REQUEST_STATE;
+} ACTIONS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
 constexpr struct dlactions
 {
 	int CHANGE_MODE;
-} DLACTIONS = {0};
+	int CHANGE_PRESET;
+} DLACTIONS = {0, 1};
 const unsigned char NUM_TAPS_BEFORE_METRO = 3;
 
 const unsigned char ONLY_BANK_WHEN_CLEAR = 1;

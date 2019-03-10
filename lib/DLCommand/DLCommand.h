@@ -11,13 +11,15 @@
 #include <WS2812Serial.h>
 #include "Observer.h"
 #include "DLled.h"
+#include "MIDI.h"
+
 class DLCommand {
 
 	public:
                 DLCommand();
                 DLCommand(uint64_t command, DLled * _led, unsigned char _buttonNum, DLObserver * _dataLooper);
                 DLObserver * dataLooper;
-                unsigned char buttonNum;
+                // unsigned char buttonNum;
                 DLled* led;
                 unsigned char * state;
                 bool noteToggle = false;
@@ -26,8 +28,8 @@ class DLCommand {
                 void execute();
                 void checkLed(bool onOff);
                 void checkDLCommands();
-                void requestState();
                 ee_storage_typ ee_storage;
+                bool waitingForWrite = false;
 };
 
 #endif

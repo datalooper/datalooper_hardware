@@ -5,6 +5,7 @@
  * @author Vince Cimo
  * @version 1.0
  */
+MIDI_CREATE_INSTANCE(HardwareSerial, Serial2, MIDI);
 
 DataLooper::DataLooper(WS2812Serial * _leds) {
    leds = _leds;
@@ -14,7 +15,7 @@ DataLooper::DataLooper(WS2812Serial * _leds) {
    for(int x = 0; x < NUM_BUTTONS; x++){
      buttons[x].init(BUTTON_PINS[x], x, LED_NUMBERS[x], leds, this);
    }
-  loadAltModeCommands();
+  
   loadConfig();
 }
 
@@ -24,6 +25,19 @@ void DataLooper::clearControlChanges(unsigned char _ccNum, unsigned char _ccValu
   }
 }
 
+void DataLooper::beginMIDI(){
+    MIDI.begin();
+}
+
+void DataLooper::loadCommands(){
+  for(int x = 0; x < NUM_BUTTONS; x++){
+    buttons[x].led.setColor(NONE);
+    buttons[x].loadCommands();
+    loadAltModeCommands();
+    buttons[x].requestState();
+  }
+
+}
  void DataLooper::loadConfig(){
 
    // CHANNEL
@@ -127,13 +141,20 @@ void DataLooper::scanForButtonActivity(unsigned long current_time){
         }
       State::blinking = false;
    }
-    if(State::inConfig == 2 && State::configExitMillis >= 1000){
+   if(State::inConfig == 2 ){
+     checkForWriteCompletion();
+   } else if(State::inConfig == 3 && State::configExitMillis >= 1000){
+     Serial.print("it made it");
       leds->clear();
       leds->show();
       State::inConfig = 0;
       State::configExitMillis = 0;
+      State::presetsWritten = 0;
+
       for (unsigned char i = 0; i < NUM_BUTTONS; i++)
       {
+        buttons[i].loadCommands();
+        loadAltModeCommands();
         buttons[i].requestState();
       }
     }
@@ -165,10 +186,6 @@ void DataLooper::changeMode(){
   }
 }
 
-// void DataLooper::changeBank(unsigned char newBank){
-//   State::bank = newBank;
-// }
-
 void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool complete)
 {
   //Translate SYSEX to variable data
@@ -189,7 +206,9 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
         break;      
       case 1:
         //state change
-        Serial.print("state:");
+        Serial.print("updating state on button:");
+        Serial.print(sysExData[3]);
+        Serial.print(" state:");
         Serial.println(sysExData[4]);
         if(State::mode != MODES.CLIP_LAUNCH_MODE){
           buttons[sysExData[3]].fastBlink(false);
@@ -201,7 +220,9 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
         for(int x=0; x<NUM_BUTTONS; x++){
             if(buttons[x].onLooperStateChange(sysExData[3])){
               //If not undo command, indicate fast blink for requested command
-              if(sysExData[4] - sysExData[3] * 4 != 2){
+              Serial.print("cmd request");
+              Serial.println(sysExData[4] - sysExData[3] * 4);
+              if(sysExData[4] - sysExData[3] * 4 != 2 && !(buttons[x].led.curColor.rgb == WHT.rgb && sysExData[4] - sysExData[3] * 4 == 3)){
                 buttons[x].fastBlink(true);
               }
             }
@@ -227,22 +248,23 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
       case 7:
         Serial.println("in config");
         State::inConfig = 1;
-        break;
-      case 8:
-        Serial.println("config byte");
-        configureDL(sysExData);
-        break;
-      case 9:
-        Serial.println("end config");
-        delay(500);
         for(int x=0; x<NUM_BUTTONS; x++){
-          buttons[x].loadCommands();
           leds->setPixel(LED_NUMBERS[x], RED.rgb);
           leds->show();
-          State::inConfig = 2;
-          State::configExitMillis = 0;
+          buttons[x].startConfig();
         }
-        loadAltModeCommands();
+        break;
+      case 8:
+        // Serial.print("config byte on button #");
+        // Serial.println(sysExData[3]);
+        buttons[sysExData[3]].configureDL(sysExData);
+        break;
+      case 9:
+          State::inConfig = 2;
+          Serial.println("midi all sent");
+        break;
+      case 10:
+        //endConfig();
         break;
       default:
         break;
@@ -262,83 +284,73 @@ void DataLooper::offBeat(){
     buttons[x].led.restoreColor();
   }
 }
-
-void DataLooper::configureDL(const uint8_t *sysExData){
-      ee_storage_typ command;
-      Serial.print("Command #: ");
-      Serial.println(sysExData[sysExStartByte-1]);
-          for(int byte = 0; byte < SYSEX_BYTES_PER_COMMAND; byte++){
-            switch(byte){
-              case 0:
-                Serial.print("Button Action: ");
-                command.commands.button_action = sysExData[sysExStartByte+byte];
-                break;
-              case 1:
-                Serial.print("Action: ");
-                command.commands.action = sysExData[sysExStartByte+byte];
-                break;
-              case 2:
-                Serial.print("Data 1: ");
-                command.commands.data1 = sysExData[sysExStartByte+byte];
-                break;
-              case 3:
-                Serial.print("Data 2: ");
-                command.commands.data2 = sysExData[sysExStartByte+byte];
-                break;
-              case 4:
-                Serial.print("Data 3: ");
-                command.commands.data3 = sysExData[sysExStartByte+byte];
-                break;
-              case 5:
-                Serial.print("Data 4: ");
-                command.commands.data4 = sysExData[sysExStartByte+byte];
-                break;
-              case 6:
-                Serial.print("Data 5: ");
-                command.commands.data5 = sysExData[sysExStartByte+byte];
-                break;  
-              case 7:
-                Serial.print("LED Control: ");
-                command.commands.led_control = sysExData[sysExStartByte+byte];
-                break;
-              case 8:
-                Serial.print("Mode: ");
-                command.commands.mode = sysExData[sysExStartByte+byte];
-                break;
-            }
-            Serial.println (sysExData[sysExStartByte+byte]);
-            
-          } 
-  writeCommand(sysExData[sysExStartByte-1], command);
+void DataLooper::requestState(){
+    for(int x = 0; x < NUM_BUTTONS; x++){
+    buttons[x].requestState();
+  }
 }
-
-void DataLooper::writeCommand(uint8_t actionNum, ee_storage_typ command){
-  int curByte = 0;
-  int startByte = actionNum * BYTES_PER_COMMAND;
-  for(int byte = 0; byte < BYTES_PER_COMMAND; byte++){
-      EEPROM.write(startByte+curByte, command.asBytes[byte]);
-      curByte++;
-    }
-}
-
 void DataLooper::onProgramChange(byte channel, byte program){
-  //State::instance = EEPROM.read(0) + program;
-  //sendSysEx(0,0,INSTANCE_CHANGE,0);
+  Serial.println("changing preset to #");
+  Serial.println(program);
+  State::preset = program;
+  loadCommands();
 }
 void DataLooper::onControlChange(uint8_t channel, uint8_t control, uint8_t value){
   for(int x = 0; x < NUM_BUTTONS; x++){
     buttons[x].onControlChange(channel, control, value);
   }
 }
-// //Teensy only has 1 timer, so handling in base class to avoid duplicates
-// void DataLooper::blink(){
-//   blinking = true;
-//   blinkTimer.begin(endBlink, 50000);
-// }
-// void DataLooper::endBlink(){
-//   blinkTimer.end();
-//   blinking = false;
-// }
-// //TODO on bank change, end timer!!
 
+void DataLooper::sendNoteOn(uint8_t inNoteNumber,uint8_t inVelocity, uint8_t inChannel){
+  Serial.println("sending note on MIDI port");
+  MIDI.sendNoteOn(inNoteNumber,inVelocity,inChannel);
+}
+void DataLooper::sendNoteOff(uint8_t inNoteNumber, uint8_t inVelocity, uint8_t inChannel){
+  Serial.println("sending note off MIDI port");
+  MIDI.sendNoteOff(inNoteNumber, inVelocity, inChannel);
+}
+void DataLooper::sendProgramChange(uint8_t inProgramNumber, uint8_t inChannel){
+  Serial.println("sending pc MIDI port");
+  MIDI.sendProgramChange(inProgramNumber,inChannel);
+ }
+void DataLooper::sendControlChange(uint8_t inControlNumber, uint8_t inControlValue, uint8_t inChannel){
+  Serial.println("sending cc on MIDI port");
+  MIDI.sendControlChange(inControlNumber, inControlValue, inChannel);
+                          }
+void DataLooper::sendSysEx(unsigned inLength, const byte* inArray, bool inArrayContainsBoundaries){
+  //Serial.println("sending sysex on MIDI port");
+  //MIDI.sendSysEx(inLength, inArray, inArrayContainsBoundaries);                    
+}
+                          
+void DataLooper::checkForWriteCompletion(){
+  if(State::inConfig == 2){
+    bool writeComplete = true;
+    for(int x = 0; x < NUM_BUTTONS; x++){
+      if(!buttons[x].checkForWriteCompletion()){
+        writeComplete = false;
+      }
+    }
+    if(writeComplete){
+      //move on to next preset...
+      if(State::presetsWritten == NUMBER_PRESETS - 1 ){
+        Serial.println("end config");
+        endConfig();  
+      } else if(State::inConfig == 2 && State::presetsWritten < NUMBER_PRESETS - 1){
+            Serial.println("requesting next preset");
+            State::presetsWritten += 1;
+            State::inConfig = 1;
+            byte array[] = {0x1E, 12, State::presetsWritten + 1, 0, 0, 0};
+            usbMIDI.sendSysEx(6, array, false);
+      }
+    }
+  }
+}
 
+void DataLooper::endConfig(){
+  for(int x=0; x<NUM_BUTTONS; x++){
+          leds->setPixel(LED_NUMBERS[x], GREEN.rgb);
+          leds->show();
+        }
+  State::configExitMillis = 0;
+  State::inConfig = 3;
+}

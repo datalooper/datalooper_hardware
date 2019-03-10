@@ -13,11 +13,15 @@ class State
     static unsigned char lastBank;
     static unsigned char lastInstance;
     static unsigned char inConfig;
+    static unsigned char presetsWritten;
     static bool modeChanging;
     static elapsedMillis configExitMillis;
-    static char currentConfigButton;
+    static char currentConfigPreset;
     static bool transportRunning;
     static bool blinking;
+    static unsigned char preset;
+    static unsigned char presetChanging;
+    static elapsedMillis EEPROMWriting;
 };
 
 #endif

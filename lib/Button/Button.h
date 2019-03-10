@@ -18,6 +18,7 @@
 #include <WS2812Serial.h>
 #include <Observer.h>     
 #include <DLled.h>
+#include <Wire.h>
 
 class Button {
 	public:
@@ -38,6 +39,7 @@ class Button {
          void clearControlChanges(unsigned char _ccNum, unsigned char _ccValue);
          void onBeat(unsigned char beatNum);
          bool isLooperRecordButton();
+         bool isLooperCommand(DLCommand command);
          void addCommand(ee_storage_typ command, unsigned char commandNum);
          void onControlChange(uint8_t channel, uint8_t control, uint8_t value);
          DLled led;
@@ -61,8 +63,13 @@ class Button {
          bool checkNewSessionCommands();
          void checkClipLaunchCommands();
          bool shouldButtonBlink(DLCommand command);
-         void diagnoseCommand(unsigned char execute_on, unsigned char x);
-        
+         void diagnoseCommand(unsigned char x);
+         void clearPresetToggles(unsigned char presetNum);
+         byte readByte(unsigned int eeaddress );
+         void startConfig();
+         void configureDL(const uint8_t *sysExData);
+         void writeCommand(uint8_t actionNum, DLCommand * command);
+         bool checkForWriteCompletion();
 };
 
 #endif
