@@ -146,6 +146,18 @@ void Button::diagnoseCommand(unsigned char x){
     Serial.print((unsigned char) commands[x].ee_storage.commands.action );
     Serial.print(" | data1: ");
     Serial.println((unsigned char) commands[x].ee_storage.commands.data1 );
+    Serial.print(" | data2: ");
+    Serial.println((unsigned char) commands[x].ee_storage.commands.data2 );
+    Serial.print(" | data3: ");
+    Serial.println((unsigned char) commands[x].ee_storage.commands.data3 );
+    Serial.print(" | data4: ");
+    Serial.println((unsigned char) commands[x].ee_storage.commands.data4 );
+    Serial.print(" | data5: ");
+    Serial.println((unsigned char) commands[x].ee_storage.commands.data5 );
+    Serial.print(" | led_control: ");
+    Serial.println((unsigned char) commands[x].ee_storage.commands.led_control );
+    Serial.print(" | mode: ");
+    Serial.println((unsigned char) commands[x].ee_storage.commands.mode );
 
 }
 void Button::addCommand(ee_storage_typ command, unsigned char commandNum){
@@ -206,8 +218,19 @@ void Button::addCommand(ee_storage_typ command, unsigned char commandNum){
      }
  }
  void Button::requestState(){
+    //  Serial.print("requesting state on button #:");
+    //  Serial.println(buttonNumber);
+    //  Serial.print("current mode:");
+    //  Serial.println(State::mode);
      for(unsigned char x =0; x< NUMBER_COMMANDS; x++){
+        //  Serial.print("Command #");
+        //  Serial.print(x);
+        //  Serial.print(" action: ");
+        //  Serial.println((unsigned char) commands[x].ee_storage.commands.action);
+        //  Serial.print(" mode: ");
+        //  Serial.println((unsigned char) commands[x].ee_storage.commands.mode);
         if(commands[x].ee_storage.commands.action == SYSEX && State::mode == commands[x].ee_storage.commands.mode){
+        Serial.println("sending state sysex");
         byte array[] = {0x1E, ACTIONS.REQUEST_STATE, buttonNumber, commands[x].ee_storage.commands.data1, commands[x].ee_storage.commands.data2, commands[x].ee_storage.commands.data3, commands[x].ee_storage.commands.data4, commands[x].ee_storage.commands.data5};
         usbMIDI.sendSysEx(8, array, false);
         }
@@ -367,103 +390,106 @@ void Button::startConfig(){
 }
 
 void Button::configureDL(const uint8_t *sysExData){
-    
-      // Serial.print("Command #: ");
-      // Serial.println(sysExData[sysExStartByte-1]);
+    Serial.println("Button number:");
+    Serial.println(buttonNumber);
           for(int byte = 0; byte < SYSEX_BYTES_PER_COMMAND; byte++){
             switch(byte){
               case 0:
-                // Serial.print("Button Action: ");
+                Serial.print("Button Action: ");
                 commands[currentConfigCommand].ee_storage.commands.button_action = sysExData[sysExStartByte+byte];
                 break;
               case 1:
-                // Serial.print("Action: ");
+                Serial.print("Action: ");
                 commands[currentConfigCommand].ee_storage.commands.action = sysExData[sysExStartByte+byte];
                 break;
               case 2:
-                // Serial.print("Data 1: ");
+                Serial.print("Data 1: ");
                 commands[currentConfigCommand].ee_storage.commands.data1 = sysExData[sysExStartByte+byte];
                 break;
               case 3:
-                // Serial.print("Data 2: ");
+                Serial.print("Data 2: ");
                 commands[currentConfigCommand].ee_storage.commands.data2 = sysExData[sysExStartByte+byte];
                 break;
               case 4:
-                // Serial.print("Data 3: ");
+                Serial.print("Data 3: ");
                 commands[currentConfigCommand].ee_storage.commands.data3 = sysExData[sysExStartByte+byte];
                 break;
               case 5:
-                // Serial.print("Data 4: ");
+                Serial.print("Data 4: ");
                 commands[currentConfigCommand].ee_storage.commands.data4 = sysExData[sysExStartByte+byte];
                 break;
               case 6:
-                // Serial.print("Data 5: ");
+                Serial.print("Data 5: ");
                 commands[currentConfigCommand].ee_storage.commands.data5 = sysExData[sysExStartByte+byte];
                 break;  
               case 7:
-                //Serial.print("LED Control: ");
+                Serial.print("LED Control: ");
                 commands[currentConfigCommand].ee_storage.commands.led_control = sysExData[sysExStartByte+byte];
                 break;
               case 8:
-                //Serial.print("Mode: ");
+                Serial.print("Mode: ");
                 commands[currentConfigCommand].ee_storage.commands.mode = sysExData[sysExStartByte+byte];
                 break;
             }
-            //Serial.println (sysExData[sysExStartByte+byte]);
+            Serial.println (sysExData[sysExStartByte+byte]);
             
           }
-    if(State::EEPROMWriting >= 10){
-        // Serial.println("writing command");
-        writeCommand(currentConfigCommand, &commands[currentConfigCommand]);
-    } else{
-        Serial.println("waiting for write");
-        Serial.println(State::EEPROMWriting);
-        commands[currentConfigCommand].waitingForWrite = true;
-    }
+    // if(State::EEPROMWriting >= 10){
+    //     // Serial.println("writing command");
+    //     writeCommand(currentConfigCommand, &commands[currentConfigCommand]);
+    // } else{
+    //     Serial.println("waiting for write");
+    //     Serial.println(State::EEPROMWriting);
+    //     commands[currentConfigCommand].waitingForWrite = true;
+    // }
     // Serial.print("adding command #");
     // Serial.print(currentConfigCommand);
     // Serial.print(" to button #");
     // Serial.println(buttonNumber);
     currentConfigCommand += 1;
 }
-
-void Button::writeCommand(uint8_t commandNum, DLCommand * command){
-  int startByte = (buttonNumber * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND) +  commandNum * BYTES_PER_COMMAND + (State::currentConfigPreset * NUM_BUTTONS * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND);
-  command->waitingForWrite = false;
-  State::EEPROMWriting = 0;
-
-  for(int byte = 0; byte < BYTES_PER_COMMAND; byte++){   
-    int eeaddress = (startByte + byte );
-    int daddr = 0x50 | ((eeaddress >> 8) );
-    // int oldByte = readByte(eeaddress);
-    
-    // Serial.print("old byte:");
-    // Serial.print(oldByte);
-    // Serial.print(" new byte: ");
-    // Serial.println(command->ee_storage.asBytes[byte]);
-    
-    // if(command->ee_storage.asBytes[byte] != oldByte){
-        //   Serial.print("Writing button #");
-        //     Serial.print(buttonNumber);
-        //     Serial.print(" Command #");
-        //     Serial.print(commandNum);
-        //     Serial.print(" at address: ");
-        //     Serial.println(startByte);    
-            Wire.beginTransmission(daddr);
-            Wire.write(eeaddress & 0xff); // LSB
-            Wire.write(command->ee_storage.asBytes[byte]);
-            Wire.endTransmission();
-      Serial.print("writing byte:");
-      Serial.print(command->ee_storage.asBytes[byte]);
-      Serial.print(" at addr:");
-      Serial.print(daddr);
-      Serial.print(" at byte addr: ");
-      Serial.println(eeaddress & 0xff);
-      
-      
-    // }
-  }
+void Button::storeCommands(){
+    for(int x = 0; x<NUMBER_USER_COMMANDS; x++){
+        writeCommand(x, commands[x]);
+    }
 }
+// void Button::writeCommand(uint8_t commandNum, DLCommand command){
+//   int startByte = (buttonNumber * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND) +  commandNum * BYTES_PER_COMMAND + (State::currentConfigPreset * NUM_BUTTONS * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND);
+// //   command->waitingForWrite = false;
+// //   State::EEPROMWriting = 0;
+
+//   for(int byte = 0; byte < BYTES_PER_COMMAND; byte++){   
+//     int eeaddress = (startByte + byte );
+//     int daddr = 0x50 | ((eeaddress >> 8) );
+//     // int oldByte = readByte(eeaddress);
+//     // Serial.print("Writing button #");
+//     //         Serial.print(buttonNumber);
+//     //         Serial.print(" Command #");
+//     //         Serial.print(commandNum);
+//     //         Serial.print(" at address: ");
+//     //         Serial.println(startByte);    
+//     // Serial.print("old byte:");
+//     // Serial.print(oldByte);
+//     // Serial.print(" new byte: ");
+//     // Serial.println(command.ee_storage.asBytes[byte]);
+    
+//     // if(command.ee_storage.asBytes[byte] != oldByte){      
+//             Wire.beginTransmission(daddr);
+//             Wire.write(eeaddress & 0xff); // LSB
+//             Wire.write(command.ee_storage.asBytes[byte]);
+//             Wire.endTransmission();
+//     //   Serial.print("writing byte:");
+//     //   Serial.print(command.ee_storage.asBytes[byte]);
+//     //   Serial.print(" at addr:");
+//     //   Serial.print(daddr);
+//     //   Serial.print(" at byte addr: ");
+//     //   Serial.println(eeaddress & 0xff);
+      
+      
+//     // }
+// //   }
+// }
+// }
 
 byte Button::readByte(unsigned int eeaddress ) {
     byte rdata = 0x7F;
@@ -474,12 +500,12 @@ byte Button::readByte(unsigned int eeaddress ) {
     Wire.endTransmission();
     Wire.requestFrom(daddr,1);
     if (Wire.available()) { rdata = Wire.read(); 
-        Serial.print("reading byte:");
-        Serial.print(rdata);
-        Serial.print(" at addr:");
-        Serial.print(daddr);
-        Serial.print(" at byte addr: ");
-        Serial.println(eeaddress);
+        // Serial.print("reading byte:");
+        // Serial.print(rdata);
+        // Serial.print(" at addr:");
+        // Serial.print(daddr);
+        // Serial.print(" at byte addr: ");
+        // Serial.println(eeaddress);
     }
     else{
         Serial.print("wire not available at addr:");
@@ -490,21 +516,21 @@ byte Button::readByte(unsigned int eeaddress ) {
 }
 
 bool Button::checkForWriteCompletion(){
-    bool writeComplete = true;
-    for(unsigned char x = 0; x < NUMBER_USER_COMMANDS; x++){
-        // Serial.print("Button #: ");
-        // Serial.print(buttonNumber);
-        // Serial.print(" waiting for write? :");
-        // Serial.println(commands[x].waitingForWrite);
-         if(commands[x].waitingForWrite){
-             writeComplete = false;
-            //  Serial.print("EEPROMWriting: ");
-            //  Serial.println(State::EEPROMWriting);
-             if(State::EEPROMWriting > 60){
-                writeCommand(x, &commands[x]);
-             }
-         }
-    } 
-    return writeComplete;
+    // bool writeComplete = true;
+    // for(unsigned char x = 0; x < NUMBER_USER_COMMANDS; x++){
+    //     // Serial.print("Button #: ");
+    //     // Serial.print(buttonNumber);
+    //     // Serial.print(" waiting for write? :");
+    //     // Serial.println(commands[x].waitingForWrite);
+    //      if(commands[x].waitingForWrite){
+    //          writeComplete = false;
+    //         //  Serial.print("EEPROMWriting: ");
+    //         //  Serial.println(State::EEPROMWriting);
+    //          if(State::EEPROMWriting > 60){
+    //             writeCommand(x, &commands[x]);
+    //          }
+    //      }
+    // } 
+    // return writeComplete;
      
 }

@@ -15,5 +15,5 @@ unsigned char State::presetsWritten = 0;
 bool State::transportRunning = false;
 bool State::blinking = false;
 bool State::modeChanging = false;
-elapsedMillis State::EEPROMWriting = 0;
+// elapsedMillis State::EEPROMWriting = 0;
 

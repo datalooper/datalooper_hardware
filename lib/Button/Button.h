@@ -68,8 +68,9 @@ class Button {
          byte readByte(unsigned int eeaddress );
          void startConfig();
          void configureDL(const uint8_t *sysExData);
-         void writeCommand(uint8_t actionNum, DLCommand * command);
+         void writeCommand(uint8_t actionNum, DLCommand command);
          bool checkForWriteCompletion();
+         void storeCommands();
 };
 
 #endif

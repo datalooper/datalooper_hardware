@@ -80,47 +80,47 @@ const unsigned char sysExStartByte = 4;
 
 constexpr struct LState
 {
-	unsigned char STOPPED;
-	unsigned char RECORDING;
-	unsigned char PLAYING;
-	unsigned char OVERDUBBING;
-	unsigned char CLEAR;
-	unsigned char OFF;
+	int STOPPED;
+	int RECORDING;
+	int PLAYING;
+	int OVERDUBBING;
+	int CLEAR;
+	int OFF;
 } looper_state = { 0, 1, 2, 3, 4, 5};
 
 constexpr struct modes
 {
-	unsigned char USER_MODE;
-	unsigned char NEW_SESSION_MODE;
-	unsigned char CLIP_LAUNCH_MODE;
-	unsigned char ALL_BUT_USER;
+	int USER_MODE;
+	int NEW_SESSION_MODE;
+	int CLIP_LAUNCH_MODE;
+	int ALL_BUT_USER;
 } MODES = {0, 1, 2, 3};
 
 constexpr struct buttonActions
 {
-	unsigned char PRESS;
-	unsigned char RELEASE;
-	unsigned char MULTI_PRESS;
-	unsigned char MULTI_RELEASE;
-	unsigned char LONG_PRESS;
-	unsigned char LONG_RELEASE;
+	int PRESS;
+	int RELEASE;
+	int MULTI_PRESS;
+	int MULTI_RELEASE;
+	int LONG_PRESS;
+	int LONG_RELEASE;
 } BUTTON_ACTIONS = {0, 1, 2, 3, 4, 5};
 
 constexpr struct actions
 {
-	unsigned char METRO_CONTROL;
-	unsigned char LOOPER_CONTROL;
-	unsigned char TAP_TEMPO;
-	unsigned char FIXED_CLIP_CONTROL;	
-	unsigned char STOP_START_ALL;
-	unsigned char MUTE_CONTROL;
-	unsigned char TRANSPORT_CONTROL;
-	unsigned char SCENE_CONTROL;
-	unsigned char CHANGE_MODE;
-	unsigned char CHANGE_INSTANCE;
-	unsigned char MOVE_SESSION_HIGHLIGHT;
-	unsigned char REQUEST_STATE;
-} ACTIONS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+	int METRO_CONTROL;
+	int LOOPER_CONTROL;
+	int TAP_TEMPO;
+	int FIXED_CLIP_CONTROL;	
+	int STOP_START_ALL;
+	int MUTE_CONTROL;
+	int TRANSPORT_CONTROL;
+	int SCENE_CONTROL;
+	int CHANGE_MODE;
+	int CHANGE_INSTANCE;
+	int MOVE_SESSION_HIGHLIGHT;
+	int REQUEST_STATE;
+} ACTIONS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
 
 constexpr struct dlactions
 {

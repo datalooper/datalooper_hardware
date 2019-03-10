@@ -33,9 +33,10 @@ void DataLooper::loadCommands(){
   for(int x = 0; x < NUM_BUTTONS; x++){
     buttons[x].led.setColor(NONE);
     buttons[x].loadCommands();
-    loadAltModeCommands();
     buttons[x].requestState();
   }
+  //loadAltModeCommands();
+
 
 }
  void DataLooper::loadConfig(){
@@ -142,7 +143,7 @@ void DataLooper::scanForButtonActivity(unsigned long current_time){
       State::blinking = false;
    }
    if(State::inConfig == 2 ){
-     checkForWriteCompletion();
+     //checkForWriteCompletion();
    } else if(State::inConfig == 3 && State::configExitMillis >= 1000){
      Serial.print("it made it");
       leds->clear();
@@ -261,6 +262,12 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
         break;
       case 9:
           State::inConfig = 2;
+          for(int x = 0; x<NUM_BUTTONS; x++){
+            for(int y = 0; y < NUMBER_USER_COMMANDS; y++){
+              writeCommand(x, y, buttons[x].commands[y]);
+            }
+          }
+          endConfig();
           Serial.println("midi all sent");
         break;
       case 10:
@@ -354,4 +361,43 @@ void DataLooper::endConfig(){
         }
   State::configExitMillis = 0;
   State::inConfig = 3;
+}
+
+void DataLooper::writeCommand(uint8_t buttonNumber, uint8_t commandNum, DLCommand command){
+  int startByte = (buttonNumber * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND) +  commandNum * BYTES_PER_COMMAND + (State::currentConfigPreset * NUM_BUTTONS * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND);
+//   command->waitingForWrite = false;
+//   State::EEPROMWriting = 0;
+
+  for(int byte = 0; byte < BYTES_PER_COMMAND; byte++){   
+    int eeaddress = (startByte + byte );
+    int daddr = 0x50 | ((eeaddress >> 8) );
+    // int oldByte = readByte(eeaddress);
+    // Serial.print("Writing button #");
+    //         Serial.print(buttonNumber);
+    //         Serial.print(" Command #");
+    //         Serial.print(commandNum);
+    //         Serial.print(" at address: ");
+    //         Serial.println(startByte);    
+    // Serial.print("old byte:");
+    // Serial.print(oldByte);
+    // Serial.print(" new byte: ");
+    // Serial.println(command.ee_storage.asBytes[byte]);
+    
+    // if(command.ee_storage.asBytes[byte] != oldByte){      
+      Wire.beginTransmission(daddr);
+      Wire.write(eeaddress & 0xff); // LSB
+      Wire.write(command.ee_storage.asBytes[byte]);
+      Wire.endTransmission();
+      delay(10);
+    //   Serial.print("writing byte:");
+    //   Serial.print(command.ee_storage.asBytes[byte]);
+    //   Serial.print(" at addr:");
+    //   Serial.print(daddr);
+    //   Serial.print(" at byte addr: ");
+    //   Serial.println(eeaddress & 0xff);
+      
+      
+    // }
+//   }
+}
 }

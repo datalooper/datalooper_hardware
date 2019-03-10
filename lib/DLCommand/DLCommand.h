@@ -28,7 +28,7 @@ class DLCommand {
                 void checkLed(bool onOff);
                 void checkDLCommands();
                 ee_storage_typ ee_storage;
-                bool waitingForWrite = true;
+                // bool waitingForWrite = true;
 };
 
 #endif

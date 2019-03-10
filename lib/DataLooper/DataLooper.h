@@ -71,6 +71,7 @@ class DataLooper :  public DLObserver {
         void mapColors(unsigned char buttonNum, unsigned char red, unsigned char green, unsigned char blue);
         void requestState();
         byte readByte(uint8_t daddr, uint8_t curByte);
+        void writeCommand(uint8_t buttonNumber, uint8_t commandNum, DLCommand command);
         void checkForWriteCompletion();
         void endConfig();
 };
