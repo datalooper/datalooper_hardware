@@ -443,16 +443,16 @@ void Button::writeCommand(uint8_t commandNum, DLCommand * command){
     // Serial.println(command->ee_storage.asBytes[byte]);
     
     if(command->ee_storage.asBytes[byte] != oldByte){
-        Serial.print("Writing button #");
-        Serial.print(buttonNumber);
-        Serial.print(" Command #");
-        Serial.print(commandNum);
-        Serial.print(" at address: ");
-        Serial.println(startByte);    
-      Wire.beginTransmission(daddr);
-      Wire.write(eeaddress & 0xff); // LSB
-      Wire.write(command->ee_storage.asBytes[byte]);
-      Wire.endTransmission();
+          Serial.print("Writing button #");
+            Serial.print(buttonNumber);
+            Serial.print(" Command #");
+            Serial.print(commandNum);
+            Serial.print(" at address: ");
+            Serial.println(startByte);    
+            Wire.beginTransmission(daddr);
+            Wire.write(eeaddress & 0xff); // LSB
+            Wire.write(command->ee_storage.asBytes[byte]);
+            Wire.endTransmission();
     //   Serial.print("writing byte:");
     //   Serial.print(command->ee_storage.asBytes[byte]);
     //   Serial.print(" at addr:");

@@ -332,16 +332,17 @@ void DataLooper::checkForWriteCompletion(){
     }
     if(writeComplete){
       //move on to next preset...
-      if(State::presetsWritten == NUMBER_PRESETS - 1 ){
-        Serial.println("end config");
-        endConfig();  
-      } else if(State::inConfig == 2 && State::presetsWritten < NUMBER_PRESETS - 1){
-            Serial.println("requesting next preset");
-            State::presetsWritten += 1;
-            State::inConfig = 1;
-            byte array[] = {0x1E, 12, State::presetsWritten + 1, 0, 0, 0};
-            usbMIDI.sendSysEx(6, array, false);
-      }
+      endConfig();
+      // if(State::presetsWritten == NUMBER_PRESETS - 1 ){
+      //   Serial.println("end config");
+      //   endConfig();  
+      // } else if(State::inConfig == 2 && State::presetsWritten < NUMBER_PRESETS - 1){
+      //       Serial.println("requesting next preset");
+      //       State::presetsWritten += 1;
+      //       State::inConfig = 1;
+      //       byte array[] = {0x1E, 12, State::presetsWritten + 1, 0, 0, 0};
+      //       usbMIDI.sendSysEx(6, array, false);
+      // }
     }
   }
 }
