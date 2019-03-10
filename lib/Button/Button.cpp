@@ -435,33 +435,33 @@ void Button::writeCommand(uint8_t commandNum, DLCommand * command){
   for(int byte = 0; byte < BYTES_PER_COMMAND; byte++){   
     int eeaddress = (startByte + byte );
     int daddr = 0x50 | ((eeaddress >> 8) );
-    int oldByte = readByte(eeaddress);
+    // int oldByte = readByte(eeaddress);
     
     // Serial.print("old byte:");
     // Serial.print(oldByte);
     // Serial.print(" new byte: ");
     // Serial.println(command->ee_storage.asBytes[byte]);
     
-    if(command->ee_storage.asBytes[byte] != oldByte){
-          Serial.print("Writing button #");
-            Serial.print(buttonNumber);
-            Serial.print(" Command #");
-            Serial.print(commandNum);
-            Serial.print(" at address: ");
-            Serial.println(startByte);    
+    // if(command->ee_storage.asBytes[byte] != oldByte){
+        //   Serial.print("Writing button #");
+        //     Serial.print(buttonNumber);
+        //     Serial.print(" Command #");
+        //     Serial.print(commandNum);
+        //     Serial.print(" at address: ");
+        //     Serial.println(startByte);    
             Wire.beginTransmission(daddr);
             Wire.write(eeaddress & 0xff); // LSB
             Wire.write(command->ee_storage.asBytes[byte]);
             Wire.endTransmission();
-    //   Serial.print("writing byte:");
-    //   Serial.print(command->ee_storage.asBytes[byte]);
-    //   Serial.print(" at addr:");
-    //   Serial.print(daddr);
-    //   Serial.print(" at byte addr: ");
-    //   Serial.println(eeaddress & 0xff);
+      Serial.print("writing byte:");
+      Serial.print(command->ee_storage.asBytes[byte]);
+      Serial.print(" at addr:");
+      Serial.print(daddr);
+      Serial.print(" at byte addr: ");
+      Serial.println(eeaddress & 0xff);
       
       
-    }
+    // }
   }
 }
 
@@ -474,12 +474,12 @@ byte Button::readByte(unsigned int eeaddress ) {
     Wire.endTransmission();
     Wire.requestFrom(daddr,1);
     if (Wire.available()) { rdata = Wire.read(); 
-        // Serial.print("reading byte:");
-        // Serial.print(rdata);
-        // Serial.print(" at addr:");
-        // Serial.print(daddr);
-        // Serial.print(" at byte addr: ");
-        // Serial.println(eeaddress);
+        Serial.print("reading byte:");
+        Serial.print(rdata);
+        Serial.print(" at addr:");
+        Serial.print(daddr);
+        Serial.print(" at byte addr: ");
+        Serial.println(eeaddress);
     }
     else{
         Serial.print("wire not available at addr:");
@@ -500,7 +500,7 @@ bool Button::checkForWriteCompletion(){
              writeComplete = false;
             //  Serial.print("EEPROMWriting: ");
             //  Serial.println(State::EEPROMWriting);
-             if(State::EEPROMWriting > 10){
+             if(State::EEPROMWriting > 60){
                 writeCommand(x, &commands[x]);
              }
          }
