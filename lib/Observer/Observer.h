@@ -4,7 +4,7 @@
 class DLObserver {
     public:
         virtual void clearControlChanges(unsigned char _ccNum, unsigned char _ccValue);
-        virtual void loadCommands();
+        virtual void onPresetChange();
         virtual void requestState();
         virtual void sendNoteOn(uint8_t inNoteNumber,
                            uint8_t inVelocity,

@@ -165,8 +165,11 @@ void Button::addCommand(ee_storage_typ command, unsigned char commandNum){
 }
  void Button::loadCommands(){
      shouldBlink = false;
+     isFastBlinking = false;
      Serial.print("loading commands on button:");
      Serial.println(buttonNumber);
+     Serial.print("preset:");
+     Serial.println(State::preset);
      for(unsigned char x = 0; x < NUMBER_COMMANDS; x++){
          if(x < NUMBER_USER_COMMANDS){
             int presetOffset = State::preset * NUM_BUTTONS * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND; 
@@ -277,10 +280,18 @@ void Button::clearPresetToggles(unsigned char presetNum){
 }
 void Button::onControlChange(uint8_t channel, uint8_t control, uint8_t value){
     for(int x=0; x<NUMBER_USER_COMMANDS; x++){
-        if( commands[x].ee_storage.commands.action == CC_TOGGLE && commands[x].ee_storage.commands.data1 == control && value > 0 && commands[x].ee_storage.commands.data4 == channel){
+        if( commands[x].ee_storage.commands.action == CC_TOGGLE && commands[x].ee_storage.commands.data4 == channel && commands[x].ee_storage.commands.data1 == control && value > 0 ){
             led.setColor(WHT);
+            commands[x].toggle = true;
         } else if(commands[x].ee_storage.commands.action == CC_TOGGLE && commands[x].ee_storage.commands.data1 == control &&  value == 0 && commands[x].ee_storage.commands.data4 == channel){
             led.setColor(NONE);
+            commands[x].toggle = false;
+        } else if(commands[x].ee_storage.commands.action == CC && commands[x].ee_storage.commands.data1 == control && commands[x].ee_storage.commands.data2 == value && commands[x].ee_storage.commands.data3 == channel){
+            led.setColor(WHT);
+            commands[x].toggle = true;
+        } else if(commands[x].ee_storage.commands.action == CC && commands[x].ee_storage.commands.data1 == control && commands[x].ee_storage.commands.data2 != value && commands[x].ee_storage.commands.data3 == channel){
+            led.setColor(NONE);
+            commands[x].toggle = false;
         }
     }
 }
@@ -320,6 +331,7 @@ void Button::fastBlink(bool shouldFastBlink){
 void Button::changeMode(){
     switch(State::mode){
         case MODES.USER_MODE:
+            led.setColor(NONE);
             Serial.println("User Mode");
             if(isLooperRecordButton()){
                 shouldBlink = true;
@@ -453,43 +465,17 @@ void Button::storeCommands(){
         writeCommand(x, commands[x]);
     }
 }
-// void Button::writeCommand(uint8_t commandNum, DLCommand command){
-//   int startByte = (buttonNumber * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND) +  commandNum * BYTES_PER_COMMAND + (State::currentConfigPreset * NUM_BUTTONS * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND);
-// //   command->waitingForWrite = false;
-// //   State::EEPROMWriting = 0;
 
-//   for(int byte = 0; byte < BYTES_PER_COMMAND; byte++){   
-//     int eeaddress = (startByte + byte );
-//     int daddr = 0x50 | ((eeaddress >> 8) );
-//     // int oldByte = readByte(eeaddress);
-//     // Serial.print("Writing button #");
-//     //         Serial.print(buttonNumber);
-//     //         Serial.print(" Command #");
-//     //         Serial.print(commandNum);
-//     //         Serial.print(" at address: ");
-//     //         Serial.println(startByte);    
-//     // Serial.print("old byte:");
-//     // Serial.print(oldByte);
-//     // Serial.print(" new byte: ");
-//     // Serial.println(command.ee_storage.asBytes[byte]);
+
+bool Button::shouldRequestRebuild(){
+    for(int x = 0; x < NUMBER_USER_COMMANDS; x++){
+        if(commands[x].ee_storage.commands.action == CC_TOGGLE || commands[x].ee_storage.commands.action == CC){
+            return true;
+        }
+    }
+    return false;
     
-//     // if(command.ee_storage.asBytes[byte] != oldByte){      
-//             Wire.beginTransmission(daddr);
-//             Wire.write(eeaddress & 0xff); // LSB
-//             Wire.write(command.ee_storage.asBytes[byte]);
-//             Wire.endTransmission();
-//     //   Serial.print("writing byte:");
-//     //   Serial.print(command.ee_storage.asBytes[byte]);
-//     //   Serial.print(" at addr:");
-//     //   Serial.print(daddr);
-//     //   Serial.print(" at byte addr: ");
-//     //   Serial.println(eeaddress & 0xff);
-      
-      
-//     // }
-// //   }
-// }
-// }
+}
 
 byte Button::readByte(unsigned int eeaddress ) {
     byte rdata = 0x7F;
@@ -505,7 +491,7 @@ byte Button::readByte(unsigned int eeaddress ) {
         // Serial.print(" at addr:");
         // Serial.print(daddr);
         // Serial.print(" at byte addr: ");
-        // Serial.println(eeaddress);
+        // Serial.println(eeaddress & 0xff);
     }
     else{
         Serial.print("wire not available at addr:");
@@ -515,22 +501,3 @@ byte Button::readByte(unsigned int eeaddress ) {
     return rdata;
 }
 
-bool Button::checkForWriteCompletion(){
-    // bool writeComplete = true;
-    // for(unsigned char x = 0; x < NUMBER_USER_COMMANDS; x++){
-    //     // Serial.print("Button #: ");
-    //     // Serial.print(buttonNumber);
-    //     // Serial.print(" waiting for write? :");
-    //     // Serial.println(commands[x].waitingForWrite);
-    //      if(commands[x].waitingForWrite){
-    //          writeComplete = false;
-    //         //  Serial.print("EEPROMWriting: ");
-    //         //  Serial.println(State::EEPROMWriting);
-    //          if(State::EEPROMWriting > 60){
-    //             writeCommand(x, &commands[x]);
-    //          }
-    //      }
-    // } 
-    // return writeComplete;
-     
-}

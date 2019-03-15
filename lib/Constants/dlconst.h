@@ -120,7 +120,8 @@ constexpr struct actions
 	int CHANGE_INSTANCE;
 	int MOVE_SESSION_HIGHLIGHT;
 	int REQUEST_STATE;
-} ACTIONS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+	int REQUEST_MIDI_MAP_REBUILD;
+} ACTIONS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
 
 constexpr struct dlactions
 {

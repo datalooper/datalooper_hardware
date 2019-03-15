@@ -45,7 +45,7 @@ class DataLooper :  public DLObserver {
         Button buttons[NUM_BUTTONS];
         unsigned char ppqCounter = 0;
         void loadAltModeCommands();
-        void loadCommands();
+        void onPresetChange();
         void beginMIDI();
         void sendNoteOn(uint8_t inNoteNumber,
                            uint8_t inVelocity,
@@ -70,7 +70,7 @@ class DataLooper :  public DLObserver {
         elapsedMillis blinkTimer = 0;
         void mapColors(unsigned char buttonNum, unsigned char red, unsigned char green, unsigned char blue);
         void requestState();
-        byte readByte(uint8_t daddr, uint8_t curByte);
+        byte readByte(unsigned int curByte);
         void writeCommand(uint8_t buttonNumber, uint8_t commandNum, DLCommand command);
         void checkForWriteCompletion();
         void endConfig();

@@ -21,8 +21,7 @@ class DLCommand {
                 DLObserver * dataLooper;
                 DLled* led;
                 unsigned char * state;
-                bool noteToggle = false;
-                bool ccToggle = false;
+                bool toggle = false;
                 void sendSysEx(); 
                 void execute();
                 void checkLed(bool onOff);

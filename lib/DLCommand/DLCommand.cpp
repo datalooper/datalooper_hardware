@@ -32,31 +32,31 @@ void DLCommand::execute(){
                 checkLed(false);
                 break;
             case NOTE_TOGGLE:
-                if(!noteToggle){
+                if(!toggle){
                     Serial.println("sending note toggle on");
                     usbMIDI.sendNoteOn ( ee_storage.commands.data1, ee_storage.commands.data2, ee_storage.commands.data3);                
                     dataLooper->sendNoteOn(ee_storage.commands.data1, ee_storage.commands.data2, ee_storage.commands.data3);
-                    noteToggle = true;
+                    toggle = true;
                 } else{
                     Serial.println("sending note toggle off");
                     usbMIDI.sendNoteOff ( ee_storage.commands.data1, 0, ee_storage.commands.data3);
                     dataLooper->sendNoteOff(ee_storage.commands.data1, 0, ee_storage.commands.data3);
-                    noteToggle = false;
+                    toggle = false;
                 }
-                checkLed(noteToggle);
+                checkLed(toggle);
                 break;
             case CC_TOGGLE:
                 Serial.println("CC Toggle");
-                if(!ccToggle){
+                if(!toggle){
                     usbMIDI.sendControlChange ( ee_storage.commands.data1, ee_storage.commands.data2, ee_storage.commands.data4);
                     dataLooper->sendControlChange(ee_storage.commands.data1, ee_storage.commands.data2, ee_storage.commands.data4);
-                    ccToggle = true;
+                    toggle = true;
                 } else{
                     usbMIDI.sendControlChange ( ee_storage.commands.data1, ee_storage.commands.data3, ee_storage.commands.data4);
                     dataLooper->sendControlChange(ee_storage.commands.data1, ee_storage.commands.data2, ee_storage.commands.data4);
-                    ccToggle = false;
+                    toggle = false;
                 }
-                checkLed(ccToggle);
+                checkLed(toggle);
                 break;
             case CC:
                 dataLooper->clearControlChanges(ee_storage.commands.data1, ee_storage.commands.data2);
@@ -97,9 +97,7 @@ void DLCommand::checkDLCommands(){
             Serial.print("changing to preset #:");
             Serial.println((unsigned char) ee_storage.commands.data2);
             State::preset = ee_storage.commands.data2;
-            byte array[] = {0x1E, ACTIONS.CHANGE_INSTANCE};
-            usbMIDI.sendSysEx(8, array, false);
-            dataLooper->loadCommands();
+            dataLooper->onPresetChange();
             break;    
     }
 }

@@ -71,6 +71,7 @@ class Button {
          void writeCommand(uint8_t actionNum, DLCommand command);
          bool checkForWriteCompletion();
          void storeCommands();
+         bool shouldRequestRebuild();
 };
 
 #endif

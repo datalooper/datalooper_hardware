@@ -47,8 +47,8 @@ void setup()
   usbMIDI.setHandleProgramChange(onProgramChange);
   usbMIDI.setHandleStart(onStart);
   usbMIDI.setHandleStop(onStop);
-  dataLooper.loadCommands();
   dataLooper.beginMIDI();
+  dataLooper.onPresetChange();
 
 }
 
