@@ -46,11 +46,11 @@ class Button {
          DLCommand commands[NUMBER_COMMANDS];
          unsigned char buttonNumber;
          unsigned char ledNumber;
-         unsigned int press_time;
+         int press_time;
          unsigned char currentConfigCommand;
          boolean is_pressed;
          bool long_pressed;
-         unsigned short int long_press_time;
+         short int long_press_time;
          Bounce bounce;
          DLObserver* dataLooper;
          void fastBlink(bool shouldFastBlink);

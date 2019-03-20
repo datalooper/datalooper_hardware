@@ -21,7 +21,7 @@ class State
     static bool blinking;
     static unsigned char preset;
     static unsigned char presetChanging;
-    // static elapsedMillis EEPROMWriting;
+    static unsigned char globalChannel;
 };
 
 #endif

@@ -24,8 +24,8 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
 
  void Button::update(unsigned long current_time){
      bounce.update();
+
      //On Press
-     
      if(bounce.fallingEdge()){
          Serial.print("button #");
          Serial.println(buttonNumber);
@@ -35,6 +35,7 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
              onPress(current_time);
          }
      }
+
      //On Release
      else if(bounce.risingEdge()){
          State::modeChanging = false; 
@@ -66,12 +67,14 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
      is_pressed = true;
      checkCommands(0);
  }
+
  void Button::onRelease(){
      Serial.println("release");
      is_pressed = false;
      long_press_time = 500;
      checkCommands(1);
  }
+
  void Button::onMultiPress(){
      Serial.print("multi-press");
      Serial.println();
@@ -80,6 +83,7 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
          onPress(-1);
      }
  }
+
  void Button::onMultiRelease(){
      Serial.println("multi-release");
      is_pressed = false;
@@ -88,6 +92,7 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
          onRelease();
      }
  }
+
  void Button::onLongPress(){
      Serial.println("long-press");
      if(long_press_time == 500){
@@ -97,6 +102,7 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
      long_pressed = true;
      
  }
+
  void Button::onLongRelease(){
      Serial.println("long-release");
 
@@ -106,15 +112,13 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
      checkCommands(5);
  }
 
-
-
  bool Button::checkCommands(unsigned char execute_on){
-  
+        Serial.println("checking commands");
         //Iterate through all commands loaded from EEPROM. Only 1 bank of commands loaded at a time to save runtime memory
         bool exec = false;
         for (int x=0; x < NUMBER_COMMANDS; x++){
             //Check if button action matches command action
-            if(commands[x].ee_storage.commands.button_action == execute_on){
+            if(commands[x].ee_storage.commands.button_action == execute_on && !State::modeChanging && commands[x].ee_storage.commands.action != 127 ){
 
                 //If current mode is NEW_SESSION_MODE, modify looper record commands for unquantized recording
                 if(State::mode == MODES.NEW_SESSION_MODE && isLooperRecordButton()){
@@ -126,7 +130,7 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
                     exec = true;
                 } 
                 //If in another mode (right now, just user mode), execute the command normally.
-                else if(State::mode == commands[x].ee_storage.commands.mode || (commands[x].ee_storage.commands.mode == MODES.ALL_BUT_USER && State::mode != MODES.USER_MODE) || isLooperCommand(commands[x])) {
+                else if(State::mode == commands[x].ee_storage.commands.mode || (commands[x].ee_storage.commands.mode == MODES.ALL_BUT_USER && State::mode != MODES.USER_MODE) || (State::mode == MODES.NEW_SESSION_MODE && isLooperCommand(commands[x])) ) {
                     commands[x].execute();
                     exec = true;
                 } 
@@ -158,8 +162,8 @@ void Button::diagnoseCommand(unsigned char x){
     Serial.println((unsigned char) commands[x].ee_storage.commands.led_control );
     Serial.print(" | mode: ");
     Serial.println((unsigned char) commands[x].ee_storage.commands.mode );
-
 }
+
 void Button::addCommand(ee_storage_typ command, unsigned char commandNum){
     commands[commandNum] = DLCommand(command.the_big_blob, &led, buttonNumber, dataLooper);
 }
@@ -173,7 +177,7 @@ void Button::addCommand(ee_storage_typ command, unsigned char commandNum){
      for(unsigned char x = 0; x < NUMBER_COMMANDS; x++){
          if(x < NUMBER_USER_COMMANDS){
             int presetOffset = State::preset * NUM_BUTTONS * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND; 
-            int startByte = (buttonNumber * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND) + (x * BYTES_PER_COMMAND) + presetOffset;
+            int startByte = (buttonNumber * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND) + (x * BYTES_PER_COMMAND) + presetOffset + NUM_GLOBAL_CONFIG_BYTES;
             ee_storage_typ cmdBytes;
 
             for(unsigned char n = 0; n < BYTES_PER_COMMAND; n++){
@@ -189,9 +193,9 @@ void Button::addCommand(ee_storage_typ command, unsigned char commandNum){
                 diagnoseCommand(x);
         } else{
                 ee_storage_typ dummyCmd;
-                dummyCmd.commands.button_action = 127;
-                dummyCmd.commands.action = 127;
-                commands[x] = DLCommand(dummyCmd.the_big_blob, &led, 127, dataLooper);
+                dummyCmd.commands.button_action = (unsigned char) 127;
+                dummyCmd.commands.action = (unsigned char) 127;
+                commands[x] = DLCommand(dummyCmd.the_big_blob,  &led, 127, dataLooper);
         }
      }
      
@@ -233,8 +237,8 @@ void Button::addCommand(ee_storage_typ command, unsigned char commandNum){
         //  Serial.print(" mode: ");
         //  Serial.println((unsigned char) commands[x].ee_storage.commands.mode);
         if(commands[x].ee_storage.commands.action == SYSEX && State::mode == commands[x].ee_storage.commands.mode){
-        Serial.println("sending state sysex");
-        byte array[] = {0x1E, ACTIONS.REQUEST_STATE, buttonNumber, commands[x].ee_storage.commands.data1, commands[x].ee_storage.commands.data2, commands[x].ee_storage.commands.data3, commands[x].ee_storage.commands.data4, commands[x].ee_storage.commands.data5};
+        // Serial.println("sending state sysex");
+        byte array[] = {DATALOOPER_IDENTIFIER, ACTIONS.REQUEST_STATE, buttonNumber, commands[x].ee_storage.commands.data1, commands[x].ee_storage.commands.data2, commands[x].ee_storage.commands.data3, commands[x].ee_storage.commands.data4, commands[x].ee_storage.commands.data5};
         usbMIDI.sendSysEx(8, array, false);
         }
     }
@@ -242,10 +246,10 @@ void Button::addCommand(ee_storage_typ command, unsigned char commandNum){
  bool Button::isLooperRecordButton(){
      for(int x=0; x<NUMBER_USER_COMMANDS; x++){
          bool _isLooperCommand = isLooperCommand(commands[x]);
-         Serial.print("isLooper command on button");
-         Serial.print(buttonNumber);
-         Serial.print(" is : ");
-         Serial.println(_isLooperCommand);
+        //  Serial.print("isLooper command on button");
+        //  Serial.print(buttonNumber);
+        //  Serial.print(" is : ");
+        //  Serial.println(_isLooperCommand);
         if(_isLooperCommand && (commands[x].ee_storage.commands.data3 == 0 || commands[x].ee_storage.commands.data3 == 1) ){
             return true;
         }
@@ -269,15 +273,6 @@ void Button::addCommand(ee_storage_typ command, unsigned char commandNum){
      }
  }
 
-void Button::clearPresetToggles(unsigned char presetNum){
-    // for(unsigned char x = 0; x < NUMBER_USER_COMMANDS; x++){
-    //      if(commands[x].ee_storage.commands.action == DATALOOPER_SPECIFIC && commands[x].ee_storage.commands.data1 == DLACTIONS.CHANGE_PRESET && commands[x].ee_storage.commands.data2 != presetNum) {
-    //          led.setColor(NONE);
-    //      } else if(commands[x].ee_storage.commands.action == DATALOOPER_SPECIFIC && commands[x].ee_storage.commands.data1 == DLACTIONS.CHANGE_PRESET && commands[x].ee_storage.commands.data2 == presetNum) {
-    //         led.setColor(WHT);
-    //      }
-    //  }
-}
 void Button::onControlChange(uint8_t channel, uint8_t control, uint8_t value){
     for(int x=0; x<NUMBER_USER_COMMANDS; x++){
         if( commands[x].ee_storage.commands.action == CC_TOGGLE && commands[x].ee_storage.commands.data4 == channel && commands[x].ee_storage.commands.data1 == control && value > 0 ){
@@ -316,13 +311,13 @@ void Button::unBlink(){
 
 void Button::fastBlink(bool shouldFastBlink){
     if(shouldFastBlink){
-        Serial.print("fast blinking #");
-        Serial.println(buttonNumber);
+        // Serial.print("fast blinking #");
+        // Serial.println(buttonNumber);
         isFastBlinking = true;
         fastBlinkTimer = 0;
     } else{
-        Serial.print("fast blinking off #");
-        Serial.println(buttonNumber);
+        // Serial.print("fast blinking off #");
+        // Serial.println(buttonNumber);
         isFastBlinking = false;
         led.restoreColor();
     }
@@ -336,7 +331,6 @@ void Button::changeMode(){
             if(isLooperRecordButton()){
                 shouldBlink = true;
             }
-            requestState();            
         break;
         case MODES.NEW_SESSION_MODE:
             if(isLooperRecordButton() && led.curColor.rgb != NONE.rgb) {
@@ -344,9 +338,6 @@ void Button::changeMode(){
                 led.setColor(PURPLE);
                 shouldBlink = false;
             }
-        break;
-        case MODES.CLIP_LAUNCH_MODE:
-            
         break;
     }
 }
@@ -402,6 +393,7 @@ void Button::startConfig(){
 }
 
 void Button::configureDL(const uint8_t *sysExData){
+    if(State::inConfig != 0){
     Serial.println("Button number:");
     Serial.println(buttonNumber);
           for(int byte = 0; byte < SYSEX_BYTES_PER_COMMAND; byte++){
@@ -446,25 +438,11 @@ void Button::configureDL(const uint8_t *sysExData){
             Serial.println (sysExData[sysExStartByte+byte]);
             
           }
-    // if(State::EEPROMWriting >= 10){
-    //     // Serial.println("writing command");
-    //     writeCommand(currentConfigCommand, &commands[currentConfigCommand]);
-    // } else{
-    //     Serial.println("waiting for write");
-    //     Serial.println(State::EEPROMWriting);
-    //     commands[currentConfigCommand].waitingForWrite = true;
-    // }
-    // Serial.print("adding command #");
-    // Serial.print(currentConfigCommand);
-    // Serial.print(" to button #");
-    // Serial.println(buttonNumber);
+
     currentConfigCommand += 1;
-}
-void Button::storeCommands(){
-    for(int x = 0; x<NUMBER_USER_COMMANDS; x++){
-        writeCommand(x, commands[x]);
     }
 }
+
 
 
 bool Button::shouldRequestRebuild(){
@@ -497,7 +475,7 @@ byte Button::readByte(unsigned int eeaddress ) {
         Serial.print("wire not available at addr:");
         Serial.println(eeaddress);
     }
-    
+
     return rdata;
 }
 

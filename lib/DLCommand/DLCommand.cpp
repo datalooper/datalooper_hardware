@@ -15,9 +15,8 @@ DLCommand::DLCommand(uint64_t command, DLled * _led, unsigned char _buttonNum, D
 }
 
 void DLCommand::execute(){
-        // Serial.println("executing command");
-        // Serial.println((unsigned char) ee_storage.commands.action);
-        if(ee_storage.commands.action != 127){
+        Serial.println("executing command");
+        Serial.println((unsigned char) ee_storage.commands.button_action);
         switch(ee_storage.commands.action){
             case NOTE_ON:
                 Serial.println("sending note on");
@@ -69,16 +68,19 @@ void DLCommand::execute(){
                 usbMIDI.sendProgramChange ( ee_storage.commands.data1, 1);
                 dataLooper->sendProgramChange(ee_storage.commands.data1, 1);
                 break;
+            case SYSEX:
+            {
+                Serial.print("Sending sysex, mode #");
+                Serial.println(State::mode);
+                byte array[] = {DATALOOPER_IDENTIFIER, ee_storage.commands.data1, ee_storage.commands.data2, ee_storage.commands.data3, ee_storage.commands.data4, ee_storage.commands.data5};
+                usbMIDI.sendSysEx(6, array, false);
+                break;
+            }
             case DATALOOPER_SPECIFIC:
                 checkDLCommands();
                 break;
-            case SYSEX:
-                Serial.println("Sending sysex");
-                byte array[] = {0x1E, ee_storage.commands.data1, ee_storage.commands.data2, ee_storage.commands.data3, ee_storage.commands.data4, ee_storage.commands.data5};
-                usbMIDI.sendSysEx(6, array, false);
-                //dataLooper->sendSysEx(6, array, false);
-                break;
-        }
+
+        
         }
 }
 
@@ -92,13 +94,13 @@ void DLCommand::checkDLCommands(){
                 State::mode = ee_storage.commands.data2;
                 State::modeChanging = true;   
             }       
-            break;
+            return;
         case DLACTIONS.CHANGE_PRESET:
             Serial.print("changing to preset #:");
             Serial.println((unsigned char) ee_storage.commands.data2);
             State::preset = ee_storage.commands.data2;
             dataLooper->onPresetChange();
-            break;    
+            return;    
     }
 }
 

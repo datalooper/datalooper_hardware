@@ -23,25 +23,17 @@ class DataLooper :  public DLObserver {
         void init();
         void onControlChange(uint8_t channel, uint8_t control, uint8_t value);
         WS2812Serial * leds;
-         void loadConfig();
-        // void diagnoseButton(int i, int n, int num);
-        // void changeMode(unsigned char newMode);
-        // void changeBank(unsigned char newBank);
+        unsigned char globalCommands[NUM_GLOBAL_CONFIG_BYTES];
+        void loadConfig();
         void onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool complete);
         void onProgramChange(byte channel, byte program);
         void configureDL(const uint8_t * sysExData);
         void writeCommand(uint8_t actionNum, ee_storage_typ command);
         void offBeat();
-        // void sendSysEx(int looper, int control, byte action, byte long_press_seconds);
         void scanForButtonActivity(unsigned long current_time);
         void clearControlChanges(unsigned char _ccNum, unsigned char _ccValue);
         void changeMode();
-        // void blink();
-        // DLCommand getCommand(unsigned char execute_on, unsigned char mode, unsigned char action, unsigned char data1, unsigned char data2, unsigned char looperNum);
-        // static void endBlink();
-        // void checkForBankChange();
         void checkForModeChange();
-        // void altModeCommands();
         Button buttons[NUM_BUTTONS];
         unsigned char ppqCounter = 0;
         void loadAltModeCommands();
@@ -74,6 +66,7 @@ class DataLooper :  public DLObserver {
         void writeCommand(uint8_t buttonNumber, uint8_t commandNum, DLCommand command);
         void checkForWriteCompletion();
         void endConfig();
+        void writeGlobalConfig();
 };
 
 #endif

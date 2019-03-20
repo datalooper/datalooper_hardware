@@ -16,7 +16,6 @@ DataLooper::DataLooper(WS2812Serial * _leds) {
      buttons[x].init(BUTTON_PINS[x], x, LED_NUMBERS[x], leds, this);
    }
   
-  loadConfig();
 }
 
 void DataLooper::clearControlChanges(unsigned char _ccNum, unsigned char _ccValue){
@@ -39,8 +38,9 @@ void DataLooper::onPresetChange(){
     buttons[x].loadCommands();
   }
   loadAltModeCommands();
-  
-  byte array[] = {0x1E, ACTIONS.CHANGE_INSTANCE};
+  loadConfig();
+
+  byte array[] = {DATALOOPER_IDENTIFIER, ACTIONS.CHANGE_INSTANCE};
   usbMIDI.sendSysEx(8, array, false);
   bool shouldRequestRebuild = false;
   for(int x = 0; x< NUM_BUTTONS; x++){
@@ -49,34 +49,13 @@ void DataLooper::onPresetChange(){
   }
   if(shouldRequestRebuild){
     Serial.println("requesting rebuild");
-    byte array[] = {0x1E, ACTIONS.REQUEST_MIDI_MAP_REBUILD};
+    byte array[] = {DATALOOPER_IDENTIFIER, ACTIONS.REQUEST_MIDI_MAP_REBUILD};
     usbMIDI.sendSysEx(8, array, false);    
   }
 }
  void DataLooper::loadConfig(){
-
-   // CHANNEL
-  //  if(EEPROM.read(126) == 255){
-  //    //channel 14 default
-  //    EEPROM.write(126,14);
-  //    channel = 14;
-  //  } else{
-	//    channel = EEPROM.read(126);
-  //  }
-
-   // DEFAULT MODE ON STARTUP
-    State::mode = 0;
-  //  if(EEPROM.read(125) == 255){
-  //    //looper mode default
-  //    EEPROM.write(125,0);
-     
-  //  } else{
-	//    State::mode = EEPROM.read(125);
-  //  }
-
-
-
-   //EEPROM BUTTON COMMANDS LOADED IN INDIVIDUAL CLASS
+    State::globalChannel = readByte(GLOBAL_SETTINGS.GLOBAL_CHANNEL);
+    State::mode = readByte(GLOBAL_SETTINGS.STARTING_MODE);
  }
 
 void DataLooper::loadAltModeCommands(){
@@ -138,9 +117,8 @@ void DataLooper::loadAltModeCommands(){
       ee_storage.commands.button_action = BUTTON_ACTIONS.PRESS;
       ee_storage.commands.data1 = ACTIONS.FIXED_CLIP_CONTROL;
       ee_storage.commands.data2 = x % 4 + 1;
-      ee_storage.commands.data3 = 4;
-      ee_storage.commands.data4 = 1;
-      ee_storage.commands.data5 = x/4 + 1;
+      ee_storage.commands.data3 = 0;
+      ee_storage.commands.data4 = x/4 + 1;
       ee_storage.commands.mode = MODES.CLIP_LAUNCH_MODE;
       buttons[x].addCommand(ee_storage, 3);
     }
@@ -175,7 +153,7 @@ void DataLooper::checkForModeChange(){
   if (State::mode != State::lastMode){
     changeMode();
     State::lastMode = State::mode;
-    byte array[] = {0x1E, ACTIONS.CHANGE_MODE, State::mode, 0, 0, 0};
+    byte array[] = {DATALOOPER_IDENTIFIER, ACTIONS.CHANGE_MODE, State::mode, 0, 0, 0};
     usbMIDI.sendSysEx(6, array, false);
 
     if(State::mode == MODES.CLIP_LAUNCH_MODE){
@@ -196,9 +174,9 @@ void DataLooper::changeMode(){
 void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool complete)
 {
   //Translate SYSEX to variable data
-  if(sysExData[1] == 0x1e){
+  if(sysExData[1] == DATALOOPER_IDENTIFIER){
     switch(sysExData[2]){
-      case 0:
+      case SYSEX_COMMANDS.DAW_CONNECTION:
         //DAW Connection
         if(sysExData[3] == 0x01){
           State::dawConnected = true;
@@ -211,7 +189,7 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
           Serial.print("daw disconnected");
         }
         break;      
-      case 1:
+      case SYSEX_COMMANDS.STATE_CHANGE:
         //state change
         Serial.print("updating state on button:");
         Serial.print(sysExData[3]);
@@ -222,7 +200,7 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
           buttons[sysExData[3]].updateLooperState(sysExData[4]);
         }
         break;
-      case 2:
+      case SYSEX_COMMANDS.REQUEST_MIDI:
         Serial.println("looper command requested");
         for(int x=0; x<NUM_BUTTONS; x++){
             if(buttons[x].onLooperStateChange(sysExData[3])){
@@ -234,10 +212,10 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
               }
             }
           }
-        usbMIDI.sendNoteOn(sysExData[4],127,14);
-        usbMIDI.sendNoteOff(sysExData[4],127,14);
+        usbMIDI.sendNoteOn(sysExData[4],127, State::globalChannel);
+        usbMIDI.sendNoteOff(sysExData[4],127, State::globalChannel);
         break;
-      case 3:
+      case SYSEX_COMMANDS.ON_BEAT:
         if(State::mode != MODES.CLIP_LAUNCH_MODE){
           for(int x=0; x<NUM_BUTTONS; x++){
             buttons[x].onBeat(sysExData[3]);
@@ -246,25 +224,25 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
           blinkTimer = 0;
         }
         break;
-      case 5:
+      case SYSEX_COMMANDS.CHANGE_COLOR:
           mapColors(sysExData[3], (sysExData[4] << 1)  ^ sysExData[5], (sysExData[6] << 1) ^ sysExData[7], (sysExData[8] << 1) ^ sysExData[9] );
           break;
-      case 6:
+      case SYSEX_COMMANDS.CHANGE_BLINK:
         buttons[sysExData[3]].toggleBlink(sysExData[4]);
         break;
-      case 7:
+      case SYSEX_COMMANDS.START_CONFIG:
         Serial.println("in config");
         State::inConfig = 1;
         for(int x=0; x<NUM_BUTTONS; x++){
           buttons[x].startConfig();
-        }
+        } 
         break;
-      case 8:
+      case SYSEX_COMMANDS.CONFIG_ACTION_BYTE:
         // Serial.print("config byte on button #");
         // Serial.println(sysExData[3]);
         buttons[sysExData[3]].configureDL(sysExData);
         break;
-      case 9:
+      case SYSEX_COMMANDS.CONFIG_MIDI_SENT:
           State::inConfig = 2;
           for(int x = 0; x<NUM_BUTTONS; x++){
             for(int y = 0; y < NUMBER_USER_COMMANDS; y++){
@@ -277,15 +255,19 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
             State::presetsWritten += 1;
             Serial.print("requesting preset: ");
             Serial.println(State::presetsWritten + 1);
-            byte array[] = {0x1E, 12, State::presetsWritten + 1, 0, 0, 0};
+            byte array[] = {DATALOOPER_IDENTIFIER, 12, State::presetsWritten + 1, 0, 0, 0};
             usbMIDI.sendSysEx(6, array, false);
           }
           
           Serial.println("midi all sent");
         break;
-      case 10:
+      case SYSEX_COMMANDS.CONFIG_GLOBAL_BYTE:
+        State::presetsWritten = 0;
+        globalCommands[sysExData[3]] = sysExData[4];
+        Serial.println("receiving config global byte");
         break;
-      case 11:
+      case SYSEX_COMMANDS.GLOBAL_SETTINGS_SENT:
+        writeGlobalConfig();
         break;
       default:
         break;
@@ -342,31 +324,7 @@ void DataLooper::sendSysEx(unsigned inLength, const byte* inArray, bool inArrayC
   //Serial.println("sending sysex on MIDI port");
   //MIDI.sendSysEx(inLength, inArray, inArrayContainsBoundaries);                    
 }
-                          
-void DataLooper::checkForWriteCompletion(){
-  if(State::inConfig == 2){
-    bool writeComplete = true;
-    for(int x = 0; x < NUM_BUTTONS; x++){
-      if(!buttons[x].checkForWriteCompletion()){
-        writeComplete = false;
-      }
-    }
-    if(writeComplete){
-      //move on to next preset...
-      endConfig();
-      // if(State::presetsWritten == NUMBER_PRESETS - 1 ){
-      //   Serial.println("end config");
-      //   endConfig();  
-      // } else if(State::inConfig == 2 && State::presetsWritten < NUMBER_PRESETS - 1){
-      //       Serial.println("requesting next preset");
-      //       State::presetsWritten += 1;
-      //       State::inConfig = 1;
-      //       byte array[] = {0x1E, 12, State::presetsWritten + 1, 0, 0, 0};
-      //       usbMIDI.sendSysEx(6, array, false);
-      // }
-    }
-  }
-}
+             
 
 void DataLooper::endConfig(){
   for(int x=0; x<NUM_BUTTONS; x++){
@@ -377,8 +335,23 @@ void DataLooper::endConfig(){
   State::inConfig = 3;
 }
 
+void DataLooper::writeGlobalConfig(){
+  for( int x = 0; x < NUM_GLOBAL_CONFIG_BYTES; x++){
+      int oldByte = readByte(x);
+      if( oldByte != globalCommands[x]){
+        Wire.beginTransmission(0x50);
+        Wire.write(x); // LSB
+        Wire.write(globalCommands[x]);
+        Wire.endTransmission();
+        delay(10);
+      }
+  }
+  //Request presets
+  byte array[] = {DATALOOPER_IDENTIFIER, 12, 1, 0, 0, 0};
+  usbMIDI.sendSysEx(6, array, false);
+}
 void DataLooper::writeCommand(uint8_t buttonNumber, uint8_t commandNum, DLCommand command){
-  int startByte = (buttonNumber * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND) +  commandNum * BYTES_PER_COMMAND + (State::presetsWritten * NUM_BUTTONS * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND);
+  int startByte = (buttonNumber * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND) +  commandNum * BYTES_PER_COMMAND + (State::presetsWritten * NUM_BUTTONS * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND) + NUM_GLOBAL_CONFIG_BYTES;
 //   command->waitingForWrite = false;
 //   State::EEPROMWriting = 0;
 
@@ -416,6 +389,7 @@ void DataLooper::writeCommand(uint8_t buttonNumber, uint8_t commandNum, DLComman
 }
 }
 
+//TODO METHOD DUPLICATED IN BUTTON.CPP
 byte DataLooper::readByte(unsigned int eeaddress ) {
     byte rdata = 0x7F;
     int daddr = 0x50 | ((eeaddress >> 8) );
@@ -425,12 +399,12 @@ byte DataLooper::readByte(unsigned int eeaddress ) {
     Wire.endTransmission();
     Wire.requestFrom(daddr,1);
     if (Wire.available()) { rdata = Wire.read(); 
-        Serial.print("reading byte:");
-        Serial.print(rdata);
-        Serial.print(" at addr:");
-        Serial.print(daddr);
-        Serial.print(" at byte addr: ");
-        Serial.println(eeaddress & 0xff);
+        // Serial.print("reading byte:");
+        // Serial.print(rdata);
+        // Serial.print(" at addr:");
+        // Serial.print(daddr);
+        // Serial.print(" at byte addr: ");
+        // Serial.println(eeaddress & 0xff);
     }
     else{
         Serial.print("wire not available at addr:");

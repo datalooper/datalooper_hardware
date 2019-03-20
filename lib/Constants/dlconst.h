@@ -1,40 +1,18 @@
 #ifndef CONSTANTS
 #define CONSTANTS
 
-
 //GLOBAL CONST
-const unsigned char NUM_BANKS = 3;
 const unsigned char NUM_BUTTONS = 12;
 const unsigned char LED_PIN = 24;
 const unsigned char BUTTON_PINS[NUM_BUTTONS] = {8,9,1,11,4,5,6,7,0,15,2,12};
 const unsigned char LED_NUMBERS[NUM_BUTTONS] = {8,9,10,11,7,6,5,4,0,1,2,3};
 
+static const unsigned int DOUBLE_HIT_TIME = 300;
+static const unsigned int LONG_PRESS_TIME = 500;
 
-//STATE
-const unsigned char STATE_CLEAR = 4;
-//MODES
-const unsigned char LOOPER_MODE = 0;
-const unsigned char NEW_SESSION_MODE = 1;
-const unsigned char SCENE_MODE = 2;
-const unsigned char ALT_SCENE_MODE = 3;
-const unsigned char CONFIG_MODE = 4;
-const unsigned char NUMBER_MODES = 5;
-
-static const long DOUBLE_HIT_TIME = long(300);
-static const long LONG_PRESS_TIME = long(500);
-
-// the MIDI channel number to send messages
-static const unsigned char MIDI_CHAN = 14;
 
 //DOWNBEAT BLINK TIME
 static const unsigned char BLINK_TIME = 100;
-
-//STATE CONST
-// static const unsigned char STOPPED = 0;
-// static const unsigned char RECORDING = 1;
-// static const unsigned char PLAYING = 2;
-// static const unsigned char OVERDUBBING = 3;
-// static const unsigned char CLEAR = 4;
 
 //LOOPER COMMAND
 static const unsigned char RESET = 0;
@@ -74,9 +52,8 @@ const unsigned char DEBOUNCE_TIME = 25;
 //ACTIONS
 const unsigned char TAP_TEMPO_BUTTON_NUM = 7;
 const unsigned char EXIT_BUTTON_NUM = 3;
-
-
 const unsigned char sysExStartByte = 4;
+const unsigned char NUM_GLOBAL_CONFIG_BYTES = 8;
 
 constexpr struct LState
 {
@@ -123,19 +100,36 @@ constexpr struct actions
 	int REQUEST_MIDI_MAP_REBUILD;
 } ACTIONS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
 
+constexpr struct sysex_commands
+{
+	int DAW_CONNECTION;
+	int STATE_CHANGE;
+	int REQUEST_MIDI;
+	int ON_BEAT;	
+	int CHANGE_COLOR;
+	int CHANGE_BLINK;
+	int START_CONFIG;
+	int CONFIG_ACTION_BYTE;
+	int CONFIG_MIDI_SENT;
+	int CONFIG_GLOBAL_BYTE;
+	int GLOBAL_SETTINGS_SENT;
+} SYSEX_COMMANDS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+constexpr struct global_settings
+{
+	int GLOBAL_CHANNEL;
+	int STARTING_MODE;
+} GLOBAL_SETTINGS = {0, 1};
+
+const unsigned char DATALOOPER_IDENTIFIER = 0x1E;
+
+
 constexpr struct dlactions
 {
 	int CHANGE_MODE;
 	int CHANGE_PRESET;
 } DLACTIONS = {0, 1};
-const unsigned char NUM_TAPS_BEFORE_METRO = 3;
 
-const unsigned char ONLY_BANK_WHEN_CLEAR = 1;
-const unsigned char ALWAYS_BANK = 0;
-
-const unsigned char DL_TRACK_TYPE = 0;
-const unsigned char CL_TRACK_TYPE = 1;
-const unsigned char BOTH_TRACK_TYPES = 2;
 
 const unsigned char UNQUANTIZED = 0;
 const unsigned char QUANTIZED = 1;
@@ -186,16 +180,5 @@ const colorType WHT = {0x161715};
 const colorType NONE = {0x000000};
 const colorType PURPLE = {0x120009};
 const colorType CYAN = {0x001255};
-
-// //COLORS
-// const unsigned int BLUE = (unsigned int) 0x000064;
-// const unsigned int RED = (unsigned int) 0x640000;
-// const unsigned int GREEN = (unsigned int) 0x006400;
-// const unsigned int YELLOW = (unsigned int) 0x353700;
-// const unsigned int WHT = (unsigned int) 0x161715;
-// const unsigned int NONE = (unsigned int) 0x000000;
-// const unsigned int PURPLE = (unsigned int) 0x120009;
-// const unsigned int CYAN = (unsigned int) 0x001255;
-// const unsigned int GRY = 8;
 
 #endif
