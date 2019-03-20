@@ -131,6 +131,7 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
                 } 
                 //If in another mode (right now, just user mode), execute the command normally.
                 else if(State::mode == commands[x].ee_storage.commands.mode || (commands[x].ee_storage.commands.mode == MODES.ALL_BUT_USER && State::mode != MODES.USER_MODE) || (State::mode == MODES.NEW_SESSION_MODE && isLooperCommand(commands[x])) ) {
+                    diagnoseCommand(x);
                     commands[x].execute();
                     exec = true;
                 } 
