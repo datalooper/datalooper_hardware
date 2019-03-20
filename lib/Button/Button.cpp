@@ -121,7 +121,7 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
             if(commands[x].ee_storage.commands.button_action == execute_on && !State::modeChanging && commands[x].ee_storage.commands.action != 127 ){
 
                 //If current mode is NEW_SESSION_MODE, modify looper record commands for unquantized recording
-                if(State::mode == MODES.NEW_SESSION_MODE && isLooperRecordButton()){
+                if(State::mode == MODES.NEW_SESSION_MODE && isLooperCommand(commands[x], true)){
                     Serial.println("unquantized recording");
                     DLCommand tempRec = commands[x];
                     //Changing record to unquantized
@@ -130,7 +130,7 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
                     exec = true;
                 } 
                 //If in another mode (right now, just user mode), execute the command normally.
-                else if(State::mode == commands[x].ee_storage.commands.mode || (commands[x].ee_storage.commands.mode == MODES.ALL_BUT_USER && State::mode != MODES.USER_MODE) || (State::mode == MODES.NEW_SESSION_MODE && isLooperCommand(commands[x])) ) {
+                else if(State::mode == commands[x].ee_storage.commands.mode || (commands[x].ee_storage.commands.mode == MODES.ALL_BUT_USER && State::mode != MODES.USER_MODE) || (State::mode == MODES.NEW_SESSION_MODE && isLooperCommand(commands[x], false)) ) {
                     diagnoseCommand(x);
                     commands[x].execute();
                     exec = true;
@@ -188,10 +188,10 @@ void Button::addCommand(ee_storage_typ command, unsigned char commandNum){
                 if(shouldButtonBlink(commands[x])){
                     shouldBlink = true;
                 } 
-                if(commands[x].ee_storage.commands.action == DATALOOPER_SPECIFIC && commands[x].ee_storage.commands.data1 == DLACTIONS.CHANGE_PRESET && commands[x].ee_storage.commands.data2 == State::preset){
+                if(isCurrentPresetCommand(commands[x])){
                     led.setColor(WHT);
                 }
-                diagnoseCommand(x);
+                //diagnoseCommand(x);
         } else{
                 ee_storage_typ dummyCmd;
                 dummyCmd.commands.button_action = (unsigned char) 127;
@@ -199,7 +199,6 @@ void Button::addCommand(ee_storage_typ command, unsigned char commandNum){
                 commands[x] = DLCommand(dummyCmd.the_big_blob,  &led, 127, dataLooper);
         }
      }
-     
  }
 
  bool Button::shouldButtonBlink(DLCommand command){
@@ -244,24 +243,27 @@ void Button::addCommand(ee_storage_typ command, unsigned char commandNum){
         }
     }
  }
+ 
+ bool Button::isCurrentPresetCommand(DLCommand command){
+     return command.ee_storage.commands.action == DATALOOPER_SPECIFIC && command.ee_storage.commands.data1 == DLACTIONS.CHANGE_PRESET && command.ee_storage.commands.data2 == State::preset;
+ }
  bool Button::isLooperRecordButton(){
-     for(int x=0; x<NUMBER_USER_COMMANDS; x++){
-         bool _isLooperCommand = isLooperCommand(commands[x]);
-        //  Serial.print("isLooper command on button");
-        //  Serial.print(buttonNumber);
-        //  Serial.print(" is : ");
-        //  Serial.println(_isLooperCommand);
-        if(_isLooperCommand && (commands[x].ee_storage.commands.data3 == 0 || commands[x].ee_storage.commands.data3 == 1) ){
-            return true;
-        }
+     for(int x = 0; x < NUMBER_USER_COMMANDS; x++){
+         if(isLooperCommand(commands[x], true)){
+             return true;
+         }
      }
      return false;
  }
- 
- bool Button::isLooperCommand(DLCommand command){
+ bool Button::isLooperCommand(DLCommand command, bool isRecordCommand){
     
     if( command.ee_storage.commands.action == SYSEX && command.ee_storage.commands.data1 == 1 && command.ee_storage.commands.mode == MODES.USER_MODE){
-        return true;
+        if(!isRecordCommand){
+            return true;
+        } 
+        else if(isRecordCommand && (command.ee_storage.commands.data3 == 0 || command.ee_storage.commands.data3 == 1)){
+            return true;
+        }
     }
      
      return false;    
@@ -327,10 +329,15 @@ void Button::fastBlink(bool shouldFastBlink){
 void Button::changeMode(){
     switch(State::mode){
         case MODES.USER_MODE:
-            led.setColor(NONE);
             Serial.println("User Mode");
-            if(isLooperRecordButton()){
-                shouldBlink = true;
+            led.setColor(NONE);
+            for( int x = 0; x < NUMBER_USER_COMMANDS; x++){
+                if(isLooperCommand(commands[x], true)){
+                    shouldBlink = true;
+                }
+                if(isCurrentPresetCommand(commands[x])){
+                    led.setColor(WHT);
+                }
             }
         break;
         case MODES.NEW_SESSION_MODE:

@@ -38,8 +38,9 @@ class Button {
          void updateLooperState(unsigned char _looperState);
          void clearControlChanges(unsigned char _ccNum, unsigned char _ccValue);
          void onBeat(unsigned char beatNum);
+         bool isLooperCommand(DLCommand command, bool isRecordCommand);
          bool isLooperRecordButton();
-         bool isLooperCommand(DLCommand command);
+         bool isCurrentPresetCommand(DLCommand command);
          void addCommand(ee_storage_typ command, unsigned char commandNum);
          void onControlChange(uint8_t channel, uint8_t control, uint8_t value);
          DLled led;
