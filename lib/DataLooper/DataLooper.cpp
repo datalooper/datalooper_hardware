@@ -238,8 +238,8 @@ void DataLooper::onSysEx(const uint8_t *sysExData, uint16_t sysExSize, bool comp
         } 
         break;
       case SYSEX_COMMANDS.CONFIG_ACTION_BYTE:
-        // Serial.print("config byte on button #");
-        // Serial.println(sysExData[3]);
+        Serial.print("config byte on button #");
+        Serial.println(sysExData[3]);
         buttons[sysExData[3]].configureDL(sysExData);
         break;
       case SYSEX_COMMANDS.CONFIG_MIDI_SENT:

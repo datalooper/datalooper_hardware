@@ -5,10 +5,10 @@
 const unsigned char NUM_BUTTONS = 12;
 const unsigned char LED_PIN = 24;
 
-// const unsigned char BUTTON_PINS[NUM_BUTTONS] = {8,9,1,11,4,5,6,7,0,15,2,12};
+const unsigned char BUTTON_PINS[NUM_BUTTONS] = {8,9,1,11,4,5,6,7,0,15,2,12};
 
 //Pre MIDI Fix Pins
-const unsigned char BUTTON_PINS[NUM_BUTTONS] = {8,9,10,11,4,5,6,7,0,1,2,12};
+//const unsigned char BUTTON_PINS[NUM_BUTTONS] = {8,9,10,11,4,5,6,7,0,1,2,12};
 const unsigned char LED_NUMBERS[NUM_BUTTONS] = {8,9,10,11,7,6,5,4,0,1,2,3};
 
 static const unsigned int DOUBLE_HIT_TIME = 300;
