@@ -1,9 +1,7 @@
 #include <Arduino.h>
 #include <dlconst.h> 
 #include <DataLooper.h>
-#include <Wire.h>
 #include <MIDI.h>
-
 
 DMAMEM byte displayMemory[NUM_BUTTONS*12]; // 12 bytes per LED
 byte drawingMemory[NUM_BUTTONS*3];         //  3 bytes per LED

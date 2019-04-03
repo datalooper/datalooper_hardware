@@ -131,7 +131,7 @@ void Button::init(unsigned char control_pin, unsigned char _buttonNumber, unsign
                 } 
                 //If in another mode (right now, just user mode), execute the command normally.
                 else if(State::mode == commands[x].ee_storage.commands.mode || (commands[x].ee_storage.commands.mode == MODES.ALL_BUT_USER && State::mode != MODES.USER_MODE) || (State::mode == MODES.NEW_SESSION_MODE && isLooperCommand(commands[x], false)) ) {
-                    diagnoseCommand(x);
+                    // diagnoseCommand(x);
                     commands[x].execute();
                     exec = true;
                 } 
@@ -178,7 +178,11 @@ void Button::addCommand(ee_storage_typ command, unsigned char commandNum){
      for(unsigned char x = 0; x < NUMBER_COMMANDS; x++){
          if(x < NUMBER_USER_COMMANDS){
             int presetOffset = State::preset * NUM_BUTTONS * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND; 
-            int startByte = (buttonNumber * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND) + (x * BYTES_PER_COMMAND) + presetOffset + NUM_GLOBAL_CONFIG_BYTES;
+            if(presetOffset != 0){
+                //rounds off to page size
+                presetOffset += (16 * State::preset );
+            }
+            int startByte = (buttonNumber * NUMBER_USER_COMMANDS * BYTES_PER_COMMAND) + (x * BYTES_PER_COMMAND) + presetOffset + GLOBAL_CONFIG_PAGE_OFFSET;
             ee_storage_typ cmdBytes;
 
             for(unsigned char n = 0; n < BYTES_PER_COMMAND; n++){
@@ -191,7 +195,7 @@ void Button::addCommand(ee_storage_typ command, unsigned char commandNum){
                 if(isCurrentPresetCommand(commands[x])){
                     led.setColor(WHT);
                 }
-                //diagnoseCommand(x);
+                // diagnoseCommand(x);
         } else{
                 ee_storage_typ dummyCmd;
                 dummyCmd.commands.button_action = (unsigned char) 127;
@@ -314,13 +318,13 @@ void Button::unBlink(){
 
 void Button::fastBlink(bool shouldFastBlink){
     if(shouldFastBlink){
-        // Serial.print("fast blinking #");
-        // Serial.println(buttonNumber);
+        Serial.print("fast blinking #");
+        Serial.println(buttonNumber);
         isFastBlinking = true;
         fastBlinkTimer = 0;
     } else{
-        // Serial.print("fast blinking off #");
-        // Serial.println(buttonNumber);
+        Serial.print("fast blinking off #");
+        Serial.println(buttonNumber);
         isFastBlinking = false;
         led.restoreColor();
     }
@@ -348,14 +352,6 @@ void Button::changeMode(){
             }
         break;
     }
-}
-bool Button::onLooperStateChange(unsigned char _looperNum){
-    for(unsigned char x = 0; x < NUMBER_USER_COMMANDS; x++){
-         if(commands[x].ee_storage.commands.action == SYSEX && commands[x].ee_storage.commands.data1 == 1 && commands[x].ee_storage.commands.data2 == _looperNum+1 && commands[x].ee_storage.commands.data3 == 0) {
-             return true;
-         }
-         return false;
-     }
 }
 
 void Button::updateLooperState(unsigned char _looperState){
@@ -402,48 +398,48 @@ void Button::startConfig(){
 
 void Button::configureDL(const uint8_t *sysExData){
     if(State::inConfig != 0){
-    Serial.println("Button number:");
-    Serial.println(buttonNumber);
+    // Serial.println("Button number:");
+    // Serial.println(buttonNumber);
           for(int byte = 0; byte < SYSEX_BYTES_PER_COMMAND; byte++){
             switch(byte){
               case 0:
-                Serial.print("Button Action: ");
+                // Serial.print("Button Action: ");
                 commands[currentConfigCommand].ee_storage.commands.button_action = sysExData[sysExStartByte+byte];
                 break;
               case 1:
-                Serial.print("Action: ");
+                // Serial.print("Action: ");
                 commands[currentConfigCommand].ee_storage.commands.action = sysExData[sysExStartByte+byte];
                 break;
               case 2:
-                Serial.print("Data 1: ");
+                // Serial.print("Data 1: ");
                 commands[currentConfigCommand].ee_storage.commands.data1 = sysExData[sysExStartByte+byte];
                 break;
               case 3:
-                Serial.print("Data 2: ");
+                // Serial.print("Data 2: ");
                 commands[currentConfigCommand].ee_storage.commands.data2 = sysExData[sysExStartByte+byte];
                 break;
               case 4:
-                Serial.print("Data 3: ");
+                // Serial.print("Data 3: ");
                 commands[currentConfigCommand].ee_storage.commands.data3 = sysExData[sysExStartByte+byte];
                 break;
               case 5:
-                Serial.print("Data 4: ");
+                // Serial.print("Data 4: ");
                 commands[currentConfigCommand].ee_storage.commands.data4 = sysExData[sysExStartByte+byte];
                 break;
               case 6:
-                Serial.print("Data 5: ");
+                // Serial.print("Data 5: ");
                 commands[currentConfigCommand].ee_storage.commands.data5 = sysExData[sysExStartByte+byte];
                 break;  
               case 7:
-                Serial.print("LED Control: ");
+                // Serial.print("LED Control: ");
                 commands[currentConfigCommand].ee_storage.commands.led_control = sysExData[sysExStartByte+byte];
                 break;
               case 8:
-                Serial.print("Mode: ");
+                // Serial.print("Mode: ");
                 commands[currentConfigCommand].ee_storage.commands.mode = sysExData[sysExStartByte+byte];
                 break;
             }
-            Serial.println (sysExData[sysExStartByte+byte]);
+            // Serial.println (sysExData[sysExStartByte+byte]);
             
           }
 
@@ -465,19 +461,19 @@ bool Button::shouldRequestRebuild(){
 
 byte Button::readByte(unsigned int eeaddress ) {
     byte rdata = 0x7F;
-    int daddr = 0x50 | ((eeaddress >> 8) );
+    int daddr = 0x50;
 
     Wire.beginTransmission(daddr);
-    Wire.write(eeaddress & 0xff); // LSB
+    Wire.write((int)(eeaddress >> 8)); // MSB
+    Wire.write((int)(eeaddress & 0xFF)); // LSB
     Wire.endTransmission();
     Wire.requestFrom(daddr,1);
     if (Wire.available()) { rdata = Wire.read(); 
-        // Serial.print("reading byte:");
-        // Serial.print(rdata);
-        // Serial.print(" at addr:");
-        // Serial.print(daddr);
-        // Serial.print(" at byte addr: ");
-        // Serial.println(eeaddress & 0xff);
+        Serial.print("reading byte:");
+        Serial.print(rdata);
+        Serial.print(" at byte addr:");
+        Serial.println(eeaddress); // MSB
+
     }
     else{
         Serial.print("wire not available at addr:");

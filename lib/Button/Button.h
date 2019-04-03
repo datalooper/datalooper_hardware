@@ -18,7 +18,7 @@
 #include <WS2812Serial.h>
 #include <Observer.h>     
 #include <DLled.h>
-#include <Wire.h>
+#include <i2c_t3.h>
 
 class Button {
 	public:

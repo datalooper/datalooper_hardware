@@ -14,7 +14,6 @@
 #include "dlconst.h"
 #include <WS2812Serial.h>
 #include "Observer.h"
-#include "Wire.h"
 class DataLooper :  public DLObserver {
 
 	public:
@@ -67,6 +66,7 @@ class DataLooper :  public DLObserver {
         void checkForWriteCompletion();
         void endConfig();
         void writeGlobalConfig();
+        void writeCommands();
 };
 
 #endif
