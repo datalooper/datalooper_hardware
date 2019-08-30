@@ -31,7 +31,7 @@ static const unsigned char CONFIG = 7;
 
 static const unsigned char NUMBER_USER_COMMANDS = 2;
 static const unsigned char NUMBER_COMMANDS = 5;
-static const unsigned char NUMBER_PRESETS = 3;
+static const unsigned char NUMBER_PRESETS = 40;
 static const unsigned char BYTES_PER_COMMAND = 6;
 static const unsigned char SYSEX_BYTES_PER_COMMAND = 9;
 
@@ -103,7 +103,8 @@ constexpr struct actions
 	int MOVE_SESSION_HIGHLIGHT;
 	int REQUEST_STATE;
 	int REQUEST_MIDI_MAP_REBUILD;
-} ACTIONS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+	int REQUEST_NEXT_PRESET;
+} ACTIONS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
 
 constexpr struct sysex_commands
 {

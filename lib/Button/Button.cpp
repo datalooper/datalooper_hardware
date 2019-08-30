@@ -469,10 +469,10 @@ byte Button::readByte(unsigned int eeaddress ) {
     Wire.endTransmission();
     Wire.requestFrom(daddr,1);
     if (Wire.available()) { rdata = Wire.read(); 
-        Serial.print("reading byte:");
-        Serial.print(rdata);
-        Serial.print(" at byte addr:");
-        Serial.println(eeaddress); // MSB
+        // Serial.print("reading byte:");
+        // Serial.print(rdata);
+        // Serial.print(" at byte addr:");
+        // Serial.println(eeaddress); // MSB
 
     }
     else{

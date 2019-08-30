@@ -66,7 +66,7 @@ class DataLooper :  public DLObserver {
         void checkForWriteCompletion();
         void endConfig();
         void writeGlobalConfig();
-        void writeCommands();
+        void writeCommands(bool shouldWrite);
 };
 
 #endif

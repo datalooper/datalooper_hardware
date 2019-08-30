@@ -15,6 +15,7 @@ DLCommand::DLCommand(uint64_t command, DLled * _led, unsigned char _buttonNum, D
 }
 
 void DLCommand::execute(){
+    if(State::inConfig == 0){
         Serial.println("executing command");
         Serial.println((unsigned char) ee_storage.commands.button_action);
         switch(ee_storage.commands.action){
@@ -82,6 +83,7 @@ void DLCommand::execute(){
 
         
         }
+    }
 }
 
 void DLCommand::checkDLCommands(){
